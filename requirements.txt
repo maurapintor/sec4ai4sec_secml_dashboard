@@ -1,8 +1,6 @@
 fastapi
 python-multipart
 uvicorn[standard]
-torch
-torchvision
 secml-torch[foolbox]
 numpy
 foolbox

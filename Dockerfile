@@ -11,11 +11,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# torch/torchvision are pinned to a cu121 build rather than pulled in via
+# requirements.txt, because the default (unpinned) PyPI wheel now targets a much
+# newer CUDA runtime than older workstation drivers support — it installs fine but
+# torch.cuda.is_available() silently comes back False ("CUDA initialization: the
+# NVIDIA driver on your system is too old"). cu121 wheels work with any driver
+# >= 530.x (CUDA 12.1 forward-compatible); if your workstation's driver is even
+# older, pick an earlier torch/cu11x pair from https://download.pytorch.org/whl/.
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 \
+        --index-url https://download.pytorch.org/whl/cu121
+
 # Installed in its own layer so `docker build` only re-downloads/re-installs
 # dependencies when requirements.txt actually changes, not on every code edit.
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
