@@ -253,7 +253,7 @@ def get_sample_images(dataset_name: str, count: int = 16, start_index: int = 0) 
     """Return sample test images as base64 PNG thumbnails."""
     ds_cfg = DATASETS[dataset_name]
     test_dataset = ds_cfg["class"](
-        root="./data", train=False, download=True,
+        root="./data", train=False, download=False,
         transform=transforms.ToTensor(),
     )
     classes = DATASET_CLASSES[dataset_name]
@@ -289,7 +289,7 @@ def run_evaluation(config: dict, q: queue.Queue) -> None:
         q.put({"type": "progress", "message": f"Loading {dataset_name} test set..."})
         ds_cfg = DATASETS[dataset_name]
         test_dataset = ds_cfg["class"](
-            root="./data", train=False, download=True,
+            root="./data", train=False, download=False,
             transform=transforms.ToTensor(),
         )
         if sample_indices:
@@ -380,7 +380,7 @@ def run_visualization(config: dict, q: queue.Queue) -> None:
         q.put({"type": "progress", "message": f"Loading image {image_index}..."})
         ds_cfg = DATASETS[dataset_name]
         test_dataset = ds_cfg["class"](
-            root="./data", train=False, download=True,
+            root="./data", train=False, download=False,
             transform=transforms.ToTensor(),
         )
         img_tensor, true_label = test_dataset[image_index]

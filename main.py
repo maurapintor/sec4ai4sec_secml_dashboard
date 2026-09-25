@@ -124,7 +124,10 @@ class DocVQAParams(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home() -> str:
-    with open("static/visualize.html") as f:
+    # CIFAR-10-backed tabs (Adversarial Examples / Security Curve) are temporarily
+    # unlinked from the nav — slow to work with right now — so Document Analysis
+    # is the landing page. Their routes still work directly if visited by URL.
+    with open("static/docvqa.html") as f:
         return f.read()
 
 
