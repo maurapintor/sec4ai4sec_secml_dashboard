@@ -134,18 +134,31 @@ class ModularEvasionAttackFixedEps(BaseEvasionAttack):
             optimizer.step()
             x_adv.data, delta.data = self.manipulation_function(samples.data, delta.data)
 
+            stop_requested = False
             if self.trackers is not None:
                 for tracker in self.trackers:
-                    tracker.track(i, losses, scores, x_adv, delta, grad_before_processing)
+                    # A tracker may return True to request an early stop (e.g. the
+                    # model already produced the target answer) — not part of
+                    # secml-torch's Tracker contract, our own duck-typed extension.
+                    if tracker.track(i, losses, scores, x_adv, delta, grad_before_processing):
+                        stop_requested = True
 
-            best_delta.data = torch.where(
-                atleast_kd(losses < best_losses, len(samples.shape)),
-                delta.data,
-                best_delta.data,
-            )
-            best_losses.data = torch.where(losses < best_losses, losses, best_losses.data)
+            if stop_requested:
+                # A tracker's early-stop is a stronger success signal than the loss
+                # (e.g. the model's actual decoded answer already matches the
+                # target), so this iteration's delta wins outright rather than only
+                # if it happens to have the lowest loss so far.
+                best_delta.data = delta.data
+                best_losses.data = losses.data
+            else:
+                best_delta.data = torch.where(
+                    atleast_kd(losses < best_losses, len(samples.shape)),
+                    delta.data,
+                    best_delta.data,
+                )
+                best_losses.data = torch.where(losses < best_losses, losses, best_losses.data)
 
-            if losses < 1e-6:
+            if losses < 1e-6 or stop_requested:
                 break
 
         x_adv, _ = self.manipulation_function(samples.data, best_delta.data)

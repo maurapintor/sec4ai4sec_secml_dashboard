@@ -112,20 +112,24 @@ class _IterationTracker:
     def end_tracking(self) -> None:
         pass
 
-    def track(self, iteration, loss, scores, x_adv, delta, grad) -> None:  # noqa: ARG002
+    def track(self, iteration, loss, scores, x_adv, delta, grad) -> bool:  # noqa: ARG002
         image_arr = x_adv[0].clamp(0, 255).detach().cpu().numpy().astype("uint8")
         image = Image.fromarray(image_arr)
         prediction = self.model.torch_predict(image, [self.question])[0]
+        fooled = _normalize_answer(prediction) == _normalize_answer(self.target)
         fraction = (iteration + 1) / self.num_steps
         self.q.put({
             "type": "iteration",
             "iteration": iteration + 1,
             "total_iterations": self.num_steps,
             "prediction": prediction,
-            "fooled": _normalize_answer(prediction) == _normalize_answer(self.target),
+            "fooled": fooled,
             "image_b64": _pil_to_b64(_for_display(image)),
             "progress": self.progress_start + (self.progress_end - self.progress_start) * fraction,
         })
+        # Stop the attack as soon as the model actually produces the target answer —
+        # no point spending more (slow, CPU-bound) iterations once it's already fooled.
+        return fooled
 
 
 # ── Document store (bundled samples + this session's uploads) ──────────────────────
