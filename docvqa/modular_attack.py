@@ -149,7 +149,13 @@ class ModularEvasionAttackFixedEps(BaseEvasionAttack):
                 # target), so this iteration's delta wins outright rather than only
                 # if it happens to have the lowest loss so far.
                 best_delta.data = delta.data
-                best_losses.data = losses.data
+                # losses may be a plain Python float here (Pix2StructAttack.forward_loss
+                # returns one, not a tensor), so no .data attribute to rely on — use the
+                # same broadcast-safe torch.where the non-early-stop branch below uses,
+                # with an always-true condition to unconditionally take this iteration.
+                best_losses.data = torch.where(
+                    torch.ones_like(best_losses, dtype=torch.bool), losses, best_losses.data
+                )
             else:
                 best_delta.data = torch.where(
                     atleast_kd(losses < best_losses, len(samples.shape)),
