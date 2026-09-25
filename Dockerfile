@@ -25,6 +25,6 @@ COPY . .
 ENV HF_HOME=/app/.cache/huggingface
 RUN mkdir -p /app/.cache/huggingface
 
-EXPOSE 8000
+EXPOSE 9000
 
 CMD ["python", "main.py"]

@@ -24,7 +24,7 @@ RobustBench is installed directly from GitHub; a `models/` directory is created 
 python main.py
 ```
 
-Then open `http://localhost:8000` in your browser.
+Then open `http://localhost:9000` in your browser.
 
 ## Pages
 
@@ -163,9 +163,9 @@ the container.
    or without Compose:
    ```bash
    docker build -t secml-dashboard .
-   docker run --gpus all -p 8000:8000 -v hf-cache:/app/.cache/huggingface secml-dashboard
+   docker run --gpus all -p 9000:9000 -v hf-cache:/app/.cache/huggingface secml-dashboard
    ```
-4. Open `http://<workstation-ip>:8000`.
+4. Open `http://<workstation-ip>:9000`.
 
 Notes:
 - The `-v hf-cache:/app/.cache/huggingface` volume caches the Pix2Struct-DocVQA

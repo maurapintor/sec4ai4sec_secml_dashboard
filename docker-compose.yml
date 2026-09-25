@@ -3,7 +3,7 @@ services:
     build: .
     image: secml-dashboard:latest
     ports:
-      - "8000:8000"
+      - "9000:9000"
     volumes:
       # Persists the ~1.1GB Pix2Struct-DocVQA download across container restarts.
       - hf-cache:/app/.cache/huggingface
