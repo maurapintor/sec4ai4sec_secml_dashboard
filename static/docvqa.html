@@ -48,7 +48,7 @@
     .nav-link-idle { color: #6b7280; }
     .nav-link-idle:hover { color: #111827; background: #f3f4f6; }
     .thumb-wrap { transition: box-shadow 0.12s, border-color 0.12s; }
-    .doc-frame { max-height: 460px; overflow: auto; background: #fafafb; }
+    .doc-frame { overflow: hidden; background: #fafafb; }
     #results_panel .doc-frame img { cursor: zoom-in; transition: transform 0.08s linear; }
     #results_panel .doc-frame img.zoomed { transform: scale(2.2); }
     .dropzone { border: 1.5px dashed #d7dbe4; border-radius: 8px; transition: border-color 0.15s, background 0.15s; }
@@ -459,7 +459,7 @@
     document.getElementById('iteration_val').textContent = `${frame.iteration} / ${frame.total_iterations}`;
     const iterPred = document.getElementById('iter_pred');
     iterPred.textContent = frame.prediction;
-    iterPred.className = `text-lg font-bold ${frame.fooled ? 'text-red-600' : 'text-gray-800'}`;
+    iterPred.className = `text-lg font-bold ${frame.fooled ? 'text-emerald-600' : 'text-gray-800'}`;
   }
 
   function onIterationSlider(value) {
@@ -553,12 +553,12 @@
           } else {
             document.getElementById('adv_img').src = `data:image/png;base64,${data.image_b64}`;
             document.getElementById('adv_pred').textContent = data.prediction;
-            document.getElementById('adv_border').style.borderColor = data.fooled ? '#ef4444' : '#10b981';
+            document.getElementById('adv_border').style.borderColor = data.fooled ? '#10b981' : '#ef4444';
             const status = document.getElementById('adv_status');
             status.textContent = data.fooled
               ? `✓ Forgery succeeded — model answered the target "${data.target}"`
               : `✗ Forgery did not fully match target "${data.target}"`;
-            status.className = `mt-1.5 text-xs font-medium ${data.fooled ? 'text-red-500' : 'text-emerald-600'}`;
+            status.className = `mt-1.5 text-xs font-medium ${data.fooled ? 'text-emerald-600' : 'text-red-500'}`;
             document.getElementById('computing_bar').classList.add('hidden');
           }
         } else if (data.type === 'done') {
