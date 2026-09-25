@@ -92,10 +92,10 @@ class DocVQAParams(BaseModel):
     doc_id: str
     question: str
     target: str
-    mask: str = "dark_pixels"
+    mask: str = "dominant_channel"
     perturbation_model: str = "l2"
     eps: float = 30000.0
-    steps: int = 10
+    steps: int = 20
     step_size: float = 10.0
 
     @field_validator("question", "target")
@@ -108,9 +108,12 @@ class DocVQAParams(BaseModel):
     @field_validator("mask")
     @classmethod
     def validate_mask(cls, v: str) -> str:
-        if v not in ("dark_pixels", "white_pixels", "include_all", "bottom_right_corner"):
+        if v not in (
+            "dominant_channel", "dark_pixels", "white_pixels", "include_all", "bottom_right_corner",
+        ):
             raise ValueError(
-                "mask must be 'dark_pixels', 'white_pixels', 'include_all' or 'bottom_right_corner'"
+                "mask must be 'dominant_channel', 'dark_pixels', 'white_pixels', "
+                "'include_all' or 'bottom_right_corner'"
             )
         return v
 

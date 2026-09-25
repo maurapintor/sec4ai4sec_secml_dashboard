@@ -42,3 +42,24 @@ def mask_below_gray_threshold(image: torch.Tensor, threshold: float = 245.0) -> 
     gray = image.mean(dim=-1, keepdim=True)
     is_content = gray < threshold
     return is_content.expand_as(image)
+
+
+def mask_dominant_channel(
+    image: torch.Tensor, white_threshold: float = 245.0, color_diff_threshold: float = 15.0
+) -> torch.Tensor:
+    """Combines mask_below_gray_threshold (skip the white background) with a
+    per-pixel channel restriction: on a colorful pixel (e.g. green ink), only
+    perturb the channel that's already dominant there (green), so the noise blends
+    into the existing color instead of showing up as an off-color speckle. On a
+    black/gray/white pixel (channels all close together) there's no dominant color
+    to hide behind, so all three channels stay eligible.
+    """
+    is_content = (image.mean(dim=-1, keepdim=True) < white_threshold).expand_as(image)
+
+    channel_max = image.max(dim=-1, keepdim=True).values
+    channel_min = image.min(dim=-1, keepdim=True).values
+    is_colorful = (channel_max - channel_min) >= color_diff_threshold
+    is_dominant_channel = image >= channel_max
+
+    channel_allowed = torch.where(is_colorful.expand_as(image), is_dominant_channel, True)
+    return is_content & channel_allowed

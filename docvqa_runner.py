@@ -18,6 +18,7 @@ from docvqa.attack import attack_pix2struct
 from docvqa.masks import (
     mask_below_gray_threshold,
     mask_bottom_right_corner,
+    mask_dominant_channel,
     mask_include_all,
     mask_white_pixels,
 )
@@ -25,6 +26,7 @@ from docvqa.model import Pix2StructModel
 from docvqa.processor import Pix2StructImageProcessor
 
 AVAILABLE_MASKS = {
+    "dominant_channel": mask_dominant_channel,
     "dark_pixels": mask_below_gray_threshold,
     "white_pixels": mask_white_pixels,
     "include_all": mask_include_all,
@@ -206,7 +208,7 @@ def run_docvqa_attack(config: dict, q: queue.Queue) -> None:
         steps = config["steps"]
         step_size = config["step_size"]
         perturbation_model = config.get("perturbation_model", "l2")
-        mask_function = AVAILABLE_MASKS[config.get("mask", "dark_pixels")]
+        mask_function = AVAILABLE_MASKS[config.get("mask", "dominant_channel")]
 
         image = get_document_image(doc_id)
 
