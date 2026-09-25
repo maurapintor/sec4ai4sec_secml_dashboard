@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SecML-Torch Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+        <style>
+    :root { --brand-blue: #2050c8; --brand-violet: #71318d; --brand-pink: #c52e78; --brand-soft: #f5edf8; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f6f8fc; color: #263248; }
+    .app-header { background: linear-gradient(100deg, #ffffff 0%, #fbf9fd 100%); box-shadow: 0 1px 0 rgba(32,80,200,0.08), 0 4px 16px rgba(45,54,85,0.04); }
+    .brand-lockup { display: flex; align-items: center; gap: 0.75rem; padding-right: 1.25rem; border-right: 1px solid #e7e5ef; }
+    .brand-eu { width: 220px; }
+    .top-nav { margin-left: 0.25rem; }
+    .card { border-color: #e6eaf2; box-shadow: 0 4px 18px rgba(45,54,85,0.05); }
+    .section-label { color: var(--brand-violet); }
+    @media (max-width: 760px) {
+      .app-header { flex-wrap: wrap; row-gap: 0.65rem; }
+      .brand-lockup { border-right: 0; padding-right: 0; }
+      .brand-eu { width: 190px; }
+      .top-nav { width: 100%; margin-left: 0; }
+    }
+    .bg-indigo-600 { background-color: var(--brand-blue) !important; }
+    .hover\:bg-indigo-700:hover { background-color: #173d9c !important; }
+    .text-indigo-600 { color: var(--brand-violet) !important; }
+    .hover\:text-indigo-700:hover { color: var(--brand-blue) !important; }
+    .bg-indigo-50 { background-color: var(--brand-soft) !important; }
+    .border-indigo-500 { border-color: var(--brand-pink) !important; }
+    .hover\:border-indigo-300:hover { border-color: var(--brand-pink) !important; }
+    .accent-indigo-600 { accent-color: var(--brand-blue) !important; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 500; color: #6b7280; margin-bottom: 0.25rem; }
+    .input {
+      width: 100%; background: white; border: 1px solid #e5e7eb;
+      border-radius: 6px; padding: 0.375rem 0.625rem; font-size: 0.875rem;
+      color: #111827; outline: none; transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
+    .section-label {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 0.75rem;
+    }
+    .card { background: white; border: 1px solid #f3f4f6; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .nav-link { padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.5rem; transition: all 0.15s; }
+    .nav-link-active { color: var(--brand-violet); background: var(--brand-soft); font-weight: 500; }
+    .nav-link-idle { color: #6b7280; }
+    .nav-link-idle:hover { color: #111827; background: #f3f4f6; }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+        <header class="app-header border-b border-gray-200 px-6 py-3 flex items-center gap-3 shrink-0">
+            <div class="brand-lockup shrink-0">
+                <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-12 w-12 object-contain">
+                <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="brand-eu h-12 object-contain">
+            </div>
+            <nav class="top-nav flex gap-1">
+                <a href="/visualize" class="nav-link nav-link-idle">Adversarial Examples</a>
+                <a href="/curve" class="nav-link nav-link-active">Security Curve</a>
+                <a href="/documents" class="nav-link nav-link-idle">Document Analysis</a>
+            </nav>
+        </header>
+        <div class="flex flex-1 overflow-hidden">
+            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:268px">
+                <div class="p-5 space-y-5 flex-1">
+                    <div>
+                        <p class="section-label">Model</p>
+                        <div class="field">
+                            <label>Select Model</label>
+                            <select id="model_select" class="input" onchange="onModelChange()">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <p id="model_info" class="text-xs text-gray-400 mt-2 leading-relaxed"></p>
+                    </div>
+                    <hr class="border-gray-100">
+                    <div>
+                        <p class="section-label">Dataset</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Dataset</label>
+                                <p id="dataset_display" class="text-sm text-gray-700 mt-0.5 font-medium">-</p>
+                            </div>
+                            <div class="field">
+                                <label>Samples to Display</label>
+                                <input
+                                    id="num_samples"
+                                    type="number"
+                                    class="input"
+                                    value="20"
+                                    min="1"
+                                    max="256"
+                                    onchange="loadSampleOptions()"
+                                >
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label class="text-xs font-medium text-gray-500">Samples for Evaluation</label>
+                                    <button type="button" onclick="selectAllSamples()" class="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Select all</button>
+                                </div>
+                                <p id="sample_count" class="text-xs text-gray-400 mb-2">0 selected</p>
+                                <div id="sample_selector" class="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
+                                    <div class="col-span-4 text-center py-4 text-xs text-gray-400 border border-dashed border-gray-200 rounded-md">Select a model to load samples</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="border-gray-100">
+                    <div>
+                        <p class="section-label">Attack - FMN</p>
+                        <div class="space-y-3">
+                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-500 space-y-0.5">
+                                <p>attack: FMN</p>
+                                <p>steps: 50</p>
+                                <p>norm: L2</p>
+                            </div>
+                            <div>
+                                <button type="button" onclick="toggleAdvancedCurveAttack()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                    <span id="curve_advanced_label">Show advanced</span>
+                                </button>
+                            </div>
+                            <div id="curve_advanced_attack" class="hidden space-y-3">
+                                <div class="field">
+                                    <label for="norm">Perturbation Norm</label>
+                                    <select id="norm" class="input mt-1">
+                                        <option value="l2" selected>L2</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="field">
+                                        <label>FMN Iterations</label>
+                                        <input
+                                            id="num_steps"
+                                            type="number"
+                                            class="input"
+                                            value="50"
+                                            min="1"
+                                            max="1000"
+                                        >
+                                    </div>
+                                    <div class="field">
+                                        <label>Step Size</label>
+                                        <input
+                                            id="step_size"
+                                            type="number"
+                                            class="input"
+                                            value="0.04"
+                                            min="0"
+                                            step="0.001"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-gray-100 shrink-0">
+                    <button
+                        id="run_btn"
+                        onclick="startEvaluation()"
+                        disabled
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                    >
+                        Run Evaluation
+                    </button>
+                </div>
+            </aside>
+            <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                <div id="status_bar" class="hidden card px-4 py-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="status_msg" class="text-sm text-gray-600">Starting...</span>
+                        <span id="status_pct" class="text-xs text-gray-400 tabular-nums"></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div id="progress_bar" class="h-1.5 rounded-full transition-all duration-300 bg-indigo-500" style="width:0%"></div>
+                    </div>
+                </div>
+                <div id="warn_bar" class="hidden border border-amber-200 bg-amber-50 rounded-lg px-4 py-3 flex items-start gap-2.5">
+                    <svg
+                        class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                    <p class="text-sm text-amber-700">
+                        Clean accuracy is near random chance - the model may be mismatched with this dataset. Results will not be meaningful.
+                    </p>
+                </div>
+                <div id="error_bar" class="hidden border border-red-200 bg-red-50 rounded-lg px-4 py-3">
+                    <p class="text-sm font-semibold text-red-700">Evaluation Error</p>
+                    <pre id="error_msg" class="text-xs text-red-600 mt-1 whitespace-pre-wrap font-mono"></pre>
+                </div>
+                <div class="card p-5">
+                    <p class="text-sm font-semibold text-gray-700 mb-1">Security Evaluation Curve</p>
+                    <p class="text-xs text-gray-400 mb-4">Robust accuracy vs. perturbation magnitude</p>
+                    <div id="chart" style="height: 360px;"></div>
+                </div>
+                <div id="results_panel" class="hidden card p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Results</p>
+                            <div id="clean_acc_row" class="hidden flex items-center gap-2">
+                                <span class="text-xs text-gray-400">Clean accuracy</span>
+                                <span id="clean_acc_val" class="text-sm font-semibold text-indigo-600"></span>
+                            </div>
+                        </div>
+                        <button
+                            id="pdf_btn"
+                            onclick="downloadPDF()"
+                            disabled
+                            class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <script>
+  let cleanAccuracy = null;
+  let epsData = [];
+  let accData = [];
+  let curveRuns = [];
+  let models = [];
+  let selectedModel = null;
+  let sampleOptions = [];
+  let selectedSampleIndices = new Set();
+  let showAdvancedCurveAttack = false;
+
+  // Fixed-order categorical palette (validated for CVD-safety and legibility on a white
+  // chart surface) — each run keeps the color it was assigned at creation, so identity
+  // never shifts as older runs fade and new ones are added.
+  const RUN_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+
+  const CHART_LAYOUT = {
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#6b7280', size: 12, family: 'Inter, system-ui, sans-serif' },
+    xaxis: { title: { text: 'Minimum L2 distance', standoff: 10, font: { color: '#6b7280' } }, gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb', tickfont: { color: '#9ca3af' }, automargin: true, autorange: true },
+    yaxis: { title: { text: 'Accuracy', standoff: 10, font: { color: '#6b7280' } }, gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb', tickfont: { color: '#9ca3af' }, automargin: true, autorange: true, tickformat: '.0%' },
+    legend: { font: { color: '#6b7280', size: 11 }, bgcolor: 'rgba(0,0,0,0)', orientation: 'h', y: -0.22, x: 0.5, xanchor: 'center' },
+    margin: { l: 55, r: 20, t: 10, b: 75 },
+    hovermode: 'x unified',
+    hoverlabel: { bgcolor: 'white', bordercolor: '#e5e7eb', font: { color: '#374151' } },
+  };
+  const CHART_CONFIG = { responsive: true, displayModeBar: false };
+
+  function initChart() {
+    const traces = [];
+    curveRuns.forEach((run, index) => {
+      const isLatest = index === curveRuns.length - 1;
+      const opacity = isLatest ? 1 : 0.5;
+      traces.push({
+        x: run.x,
+        y: run.y,
+        mode: 'lines+markers',
+        name: run.name,
+        line: { color: run.color, width: isLatest ? 2.5 : 1.5 },
+        marker: { color: run.color, size: isLatest ? 6 : 4 },
+        opacity,
+        hovertemplate: 'L2 distance=%{x:.5f}  Acc=%{y:.1%}<extra>%{fullData.name}</extra>',
+      });
+      if (run.clean !== null && run.x.length > 0) {
+        traces.push({
+          x: [Math.min(...run.x), Math.max(...run.x)],
+          y: [run.clean, run.clean],
+          mode: 'lines',
+          name: `${run.name} clean`,
+          showlegend: false,
+          line: { color: run.color, width: 1.5, dash: 'dot' },
+          opacity,
+          hovertemplate: 'Clean=%{y:.1%}<extra>%{fullData.name}</extra>',
+        });
+      }
+    });
+    Plotly.react('chart', traces, CHART_LAYOUT, CHART_CONFIG);
+  }
+
+  async function loadModels() {
+    const res = await fetch('/api/models');
+    models = await res.json();
+    const sel = document.getElementById('model_select');
+    sel.innerHTML = models.map(m =>
+      `<option value="${m.id}">${m.label}</option>`
+    ).join('');
+    onModelChange();
+  }
+
+  function onModelChange() {
+    const id = document.getElementById('model_select').value;
+    selectedModel = models.find(m => m.id === id) || null;
+    if (selectedModel) {
+      const dsLabel = selectedModel.dataset === 'cifar10' ? 'CIFAR-10' : selectedModel.dataset === 'mnist' ? 'MNIST' : selectedModel.dataset;
+      document.getElementById('dataset_display').textContent = dsLabel;
+      const src = selectedModel.source === 'robustbench' ? 'RobustBench' : 'PyTorch Hub';
+      document.getElementById('model_info').textContent = `Source: ${src}`;
+      document.getElementById('run_btn').disabled = false;
+      loadSampleOptions();
+    }
+  }
+
+  async function loadSampleOptions() {
+    if (!selectedModel) return;
+
+    const selector = document.getElementById('sample_selector');
+    selector.innerHTML = '<div class="col-span-4 text-center py-4 text-xs text-gray-400">Loading samples...</div>';
+
+    const count = Math.max(1, Math.min(256, parseInt(document.getElementById('num_samples').value) || 20));
+    document.getElementById('num_samples').value = count;
+    const res = await fetch(`/api/sample-images?dataset=${selectedModel.dataset}&count=${count}&start=0`);
+    sampleOptions = await res.json();
+
+    selectedSampleIndices = new Set(sampleOptions.map(sample => sample.index));
+    renderSampleSelector();
+  }
+
+  function toggleAdvancedCurveAttack() {
+    showAdvancedCurveAttack = !showAdvancedCurveAttack;
+    document.getElementById('curve_advanced_attack').classList.toggle('hidden', !showAdvancedCurveAttack);
+    document.getElementById('curve_advanced_label').textContent = showAdvancedCurveAttack ? 'Hide advanced' : 'Show advanced';
+  }
+
+  function renderSampleSelector() {
+    const selector = document.getElementById('sample_selector');
+    if (!sampleOptions.length) {
+      selector.innerHTML = '<div class="col-span-4 text-center py-4 text-xs text-gray-400 border border-dashed border-gray-200 rounded-md">No samples available</div>';
+      updateSampleSelectionLabel();
+      return;
+    }
+
+    selector.innerHTML = '';
+    for (const sample of sampleOptions) {
+      const isSelected = selectedSampleIndices.has(sample.index);
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.onclick = () => toggleSampleSelection(sample.index);
+      item.className = `rounded-md border p-0.5 transition-colors ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-indigo-300'}`;
+      item.innerHTML = `<img src="data:image/png;base64,${sample.image_b64}" class="w-full aspect-square object-cover rounded-sm"><p class="text-[10px] text-gray-500 mt-0.5 truncate">#${sample.index}</p>`;
+      selector.appendChild(item);
+    }
+
+    updateSampleSelectionLabel();
+  }
+
+  function toggleSampleSelection(index) {
+    if (selectedSampleIndices.has(index)) {
+      selectedSampleIndices.delete(index);
+    } else {
+      selectedSampleIndices.add(index);
+    }
+    renderSampleSelector();
+  }
+
+  function selectAllSamples() {
+    selectedSampleIndices = new Set(sampleOptions.map(s => s.index));
+    renderSampleSelector();
+  }
+
+  function updateSampleSelectionLabel() {
+    document.getElementById('sample_count').textContent = `${selectedSampleIndices.size} selected`;
+  }
+
+  function setCleanAccLine(acc, epsMin, epsMax) {
+    const run = curveRuns[curveRuns.length - 1];
+    if (run) {
+      run.clean = acc;
+      initChart();
+    }
+  }
+
+  function addRobustPoint(eps, acc) {
+    const run = curveRuns[curveRuns.length - 1];
+    if (run) {
+      run.x.push(eps);
+      run.y.push(acc);
+      initChart();
+    }
+  }
+
+  function showCleanAcc(acc) {
+    document.getElementById('clean_acc_val').textContent = (acc * 100).toFixed(1) + '%';
+    document.getElementById('clean_acc_row').classList.remove('hidden');
+  }
+
+  async function startEvaluation() {
+    if (!selectedModel) return;
+    if (selectedSampleIndices.size === 0) {
+      showError('Select at least one sample for the security evaluation.');
+      return;
+    }
+
+    const params = {
+      model_id:           selectedModel.id,
+      num_samples:        parseInt(document.getElementById('num_samples').value),
+      sample_indices:     Array.from(selectedSampleIndices).sort((a, b) => a - b),
+      perturbation_model: document.getElementById('norm').value,
+      num_steps:          parseInt(document.getElementById('num_steps').value),
+      step_size:          parseFloat(document.getElementById('step_size').value),
+    };
+
+    document.getElementById('run_btn').disabled = true;
+    document.getElementById('pdf_btn').disabled = true;
+    document.getElementById('status_bar').classList.remove('hidden');
+    document.getElementById('error_bar').classList.add('hidden');
+    document.getElementById('warn_bar').classList.add('hidden');
+    document.getElementById('results_panel').classList.add('hidden');
+    document.getElementById('clean_acc_row').classList.add('hidden');
+    document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-indigo-500';
+    setProgress(0, 'Submitting\u2026');
+    cleanAccuracy = null; epsData = []; accData = [];
+    const modelLabel = selectedModel.label;
+    const priorRuns = curveRuns.filter(run => run.baseName === modelLabel).length;
+    curveRuns.push({
+      name: priorRuns > 0 ? `${modelLabel} (${priorRuns + 1})` : modelLabel,
+      baseName: modelLabel,
+      color: RUN_COLORS[curveRuns.length % RUN_COLORS.length],
+      x: [],
+      y: [],
+      clean: null,
+    });
+    initChart();
+
+    try {
+      const res = await fetch('/api/evaluate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
+      const { job_id } = await res.json();
+
+      const es = new EventSource(`/api/stream/${job_id}`);
+      es.onmessage = (evt) => {
+        const data = JSON.parse(evt.data);
+        if (data.type === 'progress') {
+          setProgress(data.progress ?? null, data.message);
+        } else if (data.type === 'clean_accuracy') {
+          cleanAccuracy = data.accuracy;
+          showCleanAcc(data.accuracy);
+          setCleanAccLine(data.accuracy, 0, 1);
+          if (data.accuracy < 0.15) document.getElementById('warn_bar').classList.remove('hidden');
+        } else if (data.type === 'result_point') {
+          epsData.push(data.epsilon); accData.push(data.accuracy);
+          addRobustPoint(data.epsilon, data.accuracy);
+          if (cleanAccuracy !== null) setCleanAccLine(cleanAccuracy, 0, data.epsilon);
+          setProgress(data.progress, `FMN curve point \u03b5=${data.epsilon.toFixed(4)} [${data.index + 1}/${data.total}]`);
+          document.getElementById('results_panel').classList.remove('hidden');
+        } else if (data.type === 'done') {
+          setProgress(1, 'Evaluation complete');
+          document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-emerald-500';
+          document.getElementById('run_btn').disabled = false;
+          document.getElementById('pdf_btn').disabled = false;
+          es.close();
+        } else if (data.type === 'error') {
+          showError(data.message + (data.traceback ? '\n\n' + data.traceback : ''));
+          document.getElementById('run_btn').disabled = false;
+          es.close();
+        }
+      };
+      es.onerror = () => { showError('Lost connection to server.'); document.getElementById('run_btn').disabled = false; es.close(); };
+    } catch (err) {
+      showError(err.message);
+      document.getElementById('run_btn').disabled = false;
+    }
+  }
+
+  function setProgress(fraction, message) {
+    if (message) document.getElementById('status_msg').textContent = message;
+    if (fraction != null) {
+      const pct = Math.round(fraction * 100);
+      document.getElementById('progress_bar').style.width = pct + '%';
+      document.getElementById('status_pct').textContent = pct + '%';
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('status_bar').classList.add('hidden');
+    document.getElementById('error_bar').classList.remove('hidden');
+    document.getElementById('error_msg').textContent = msg;
+  }
+
+  async function downloadPDF() {
+    const btn = document.getElementById('pdf_btn');
+    btn.disabled = true; btn.textContent = 'Generating\u2026';
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210, margin = 15, contentW = W - 2 * margin;
+      let y = 0;
+      doc.setFillColor(32, 80, 200);
+      doc.rect(0, 0, W, 15, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+      doc.text('SEC4AI4SEC  |  Adversarial Robustness Report', margin, 10);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+      doc.text(new Date().toLocaleString(), W - margin, 10, { align: 'right' });
+      y = 24;
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 100, 100);
+      doc.text('CONFIGURATION', margin, y); y += 3;
+      const normLabel = document.getElementById('norm').value.toUpperCase();
+      const configRows = [
+        ['Model', selectedModel ? selectedModel.label : ''],
+        ['Source', selectedModel ? (selectedModel.source === 'robustbench' ? 'RobustBench' : 'PyTorch Hub') : ''],
+        ['Dataset', selectedModel ? selectedModel.dataset.toUpperCase() : ''],
+        ['Selected Samples', String(selectedSampleIndices.size)],
+        ['Perturbation Norm', normLabel],
+        ['FMN Iterations', document.getElementById('num_steps').value],
+        ['Step Size', document.getElementById('step_size').value],
+      ];
+      doc.autoTable({ startY: y, head: [['Parameter', 'Value']], body: configRows, margin: { left: margin, right: margin }, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [113, 49, 141], textColor: 255, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [248, 244, 250] }, columnStyles: { 0: { fontStyle: 'bold', cellWidth: 48 } }, theme: 'striped' });
+      y = doc.lastAutoTable.finalY + 6;
+      if (cleanAccuracy !== null) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 30);
+        doc.text('Clean Accuracy:', margin, y); doc.setTextColor(113, 49, 141);
+        doc.text((cleanAccuracy * 100).toFixed(1) + '%', margin + 35, y); y += 8;
+      }
+      const chartImg = await Plotly.toImage('chart', { format: 'png', width: 900, height: 420, scale: 2 });
+      const imgH = contentW * 420 / 900;
+      doc.addImage(chartImg, 'PNG', margin, y, contentW, imgH); y += imgH + 6;
+      if (epsData.length > 0) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 100, 100);
+        doc.text('RESULTS', margin, y); y += 3;
+        const rows = epsData.map((eps, i) => {
+          const acc = accData[i];
+          const drop = cleanAccuracy !== null ? cleanAccuracy - acc : null;
+          return [eps.toFixed(4), (acc * 100).toFixed(1) + '%', drop !== null ? '-' + (drop * 100).toFixed(1) + '%' : '-'];
+        });
+        doc.autoTable({ startY: y, head: [['eps', 'Accuracy', 'Drop']], body: rows, margin: { left: margin, right: margin }, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [113, 49, 141], textColor: 255, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [248, 244, 250] }, theme: 'striped' });
+      }
+      const slug = (selectedModel ? selectedModel.id : 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
+      doc.save(`secml_report_${slug}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download PDF`;
+    }
+  }
+
+  loadModels();
+  initChart();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,12 @@
+fastapi
+python-multipart
+uvicorn[standard]
+torch
+torchvision
+secml-torch[foolbox]
+numpy
+foolbox
+git+https://github.com/RobustBench/robustbench.git
+Pillow
+transformers
+huggingface-hub

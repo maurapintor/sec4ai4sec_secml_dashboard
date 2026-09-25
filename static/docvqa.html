@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SecML-Torch Document Analysis</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+        <style>
+    :root { --brand-blue: #2050c8; --brand-violet: #71318d; --brand-pink: #c52e78; --brand-soft: #f5edf8; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f6f8fc; color: #263248; }
+    .app-header { background: linear-gradient(100deg, #ffffff 0%, #fbf9fd 100%); box-shadow: 0 1px 0 rgba(32,80,200,0.08), 0 4px 16px rgba(45,54,85,0.04); }
+    .brand-lockup { display: flex; align-items: center; gap: 0.75rem; padding-right: 1.25rem; border-right: 1px solid #e7e5ef; }
+    .brand-eu { width: 220px; }
+    .top-nav { margin-left: 0.25rem; }
+    .card { border-color: #e6eaf2; box-shadow: 0 4px 18px rgba(45,54,85,0.05); }
+    .section-label { color: var(--brand-violet); }
+    @media (max-width: 760px) {
+      .app-header { flex-wrap: wrap; row-gap: 0.65rem; }
+      .brand-lockup { border-right: 0; padding-right: 0; }
+      .brand-eu { width: 190px; }
+      .top-nav { width: 100%; margin-left: 0; }
+    }
+    .bg-indigo-600 { background-color: var(--brand-blue) !important; }
+    .hover\:bg-indigo-700:hover { background-color: #173d9c !important; }
+    .text-indigo-600 { color: var(--brand-violet) !important; }
+    .hover\:text-indigo-700:hover { color: var(--brand-blue) !important; }
+    .bg-indigo-50 { background-color: var(--brand-soft) !important; }
+    .border-indigo-500 { border-color: var(--brand-pink) !important; }
+    .hover\:border-indigo-300:hover { border-color: var(--brand-pink) !important; }
+    .accent-indigo-600 { accent-color: var(--brand-blue) !important; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 500; color: #6b7280; margin-bottom: 0.25rem; }
+    .input {
+      width: 100%; background: white; border: 1px solid #e5e7eb;
+      border-radius: 6px; padding: 0.375rem 0.625rem; font-size: 0.875rem;
+      color: #111827; outline: none; transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
+    .section-label {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 0.75rem;
+    }
+    .card { background: white; border: 1px solid #f3f4f6; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .nav-link { padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.5rem; transition: all 0.15s; }
+    .nav-link-active { color: var(--brand-violet); background: var(--brand-soft); font-weight: 500; }
+    .nav-link-idle { color: #6b7280; }
+    .nav-link-idle:hover { color: #111827; background: #f3f4f6; }
+    .thumb-wrap { transition: box-shadow 0.12s, border-color 0.12s; }
+    .doc-frame { max-height: 460px; overflow: auto; background: #fafafb; }
+    #results_panel .doc-frame img { cursor: zoom-in; transition: transform 0.08s linear; }
+    #results_panel .doc-frame img.zoomed { transform: scale(2.2); }
+    .dropzone { border: 1.5px dashed #d7dbe4; border-radius: 8px; transition: border-color 0.15s, background 0.15s; }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--brand-blue); background: var(--brand-soft); }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #e5e7eb; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    input[type=range]:disabled::-webkit-slider-thumb { background: #d1d5db; }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="app-header border-b border-gray-200 px-6 py-3 flex items-center gap-3 shrink-0">
+            <div class="brand-lockup shrink-0">
+                <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-12 w-12 object-contain">
+                <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="brand-eu h-12 object-contain">
+            </div>
+            <nav class="top-nav flex gap-1">
+                <a href="/visualize" class="nav-link nav-link-idle">Adversarial Examples</a>
+                <a href="/curve" class="nav-link nav-link-idle">Security Curve</a>
+                <a href="/documents" class="nav-link nav-link-active">Document Analysis</a>
+            </nav>
+        </header>
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:288px">
+                <div class="p-5 space-y-5 flex-1">
+                    <!-- Document -->
+                    <div>
+                        <p class="section-label">Document</p>
+                        <label id="dropzone" class="dropzone flex flex-col items-center justify-center gap-1 py-4 cursor-pointer text-center">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0-9l-3 3m3-3l3 3"/>
+                            </svg>
+                            <span class="text-xs text-gray-500">Upload a document</span>
+                            <span class="text-[10px] text-gray-400">JPG or PNG</span>
+                            <input id="file_input" type="file" accept="image/*" class="hidden">
+                        </label>
+                        <p class="text-xs text-gray-400 mt-3 mb-1.5">Or choose an existing document — preview shows on the right</p>
+                        <div id="doc_gallery" class="grid grid-cols-3 gap-1.5">
+                            <div class="col-span-3 text-center py-4 text-xs text-gray-400">Loading documents…</div>
+                        </div>
+                    </div>
+                    <hr class="border-gray-100">
+                    <!-- Question / target -->
+                    <div class="space-y-3">
+                        <p class="section-label">Query</p>
+                        <div class="field">
+                            <label for="question_preset">Question about the document</label>
+                            <select id="question_preset" class="input mb-2" onchange="onQuestionPreset()">
+                                <option value="How much is the total?" selected>How much is the total?</option>
+                                <option value="What is the invoice number?">What is the invoice number?</option>
+                                <option value="What is the date?">What is the date?</option>
+                                <option value="__custom__">Other (type your own)…</option>
+                            </select>
+                            <input id="question" type="text" class="input" placeholder="How much is the total?" value="How much is the total?">
+                        </div>
+                        <div class="field">
+                            <label for="target">Target answer</label>
+                            <input id="target" type="text" class="input" placeholder="$0.00" value="$0.00">
+                        </div>
+                    </div>
+                    <hr class="border-gray-100">
+                    <!-- Attack params -->
+                    <div>
+                        <p class="section-label">Attack — Pix2Struct</p>
+                        <div class="space-y-3">
+                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-500 space-y-0.5">
+                                <p>attack: pix2struct forgery</p>
+                                <p>steps: 10</p>
+                                <p>norm: L2</p>
+                                <p>mask: content pixels only</p>
+                            </div>
+                            <div>
+                                <button type="button" onclick="toggleAdvanced()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                    <span id="advanced_label">Show advanced</span>
+                                </button>
+                            </div>
+                            <div id="advanced_attack" class="hidden space-y-3">
+                                <div class="field">
+                                    <label for="mask">Perturbation region</label>
+                                    <select id="mask" class="input">
+                                        <option value="dark_pixels" selected>Content pixels only (excludes white background)</option>
+                                        <option value="white_pixels">White pixels only (background)</option>
+                                        <option value="include_all">Entire document</option>
+                                        <option value="bottom_right_corner">Bottom-right corner only</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="norm">Perturbation norm</label>
+                                    <select id="norm" class="input" onchange="onNormChange()">
+                                        <option value="l2" selected>L2</option>
+                                        <option value="linf">L∞</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="field">
+                                        <label>Steps</label>
+                                        <input id="steps" type="number" class="input" value="10" min="1" max="200">
+                                    </div>
+                                    <div class="field">
+                                        <label>Step size</label>
+                                        <input id="step_size" type="number" class="input" value="10.0" min="0.01" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label id="eps_label">Epsilon (L2, global L2 budget)</label>
+                                    <input id="eps" type="number" class="input" value="30000" min="0.1" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Run button -->
+                <div class="p-4 border-t border-gray-100 shrink-0">
+                    <button
+                        id="run_btn"
+                        onclick="startAttack()"
+                        disabled
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                    >
+                        Run Attack
+                    </button>
+                    <p id="run_hint" class="text-xs text-gray-400 text-center mt-2">Choose a document, question and target answer</p>
+                </div>
+            </aside>
+            <!-- Main area -->
+            <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                <!-- Status -->
+                <div id="status_bar" class="hidden card px-4 py-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="status_msg" class="text-sm text-gray-600">Starting…</span>
+                        <span id="status_pct" class="text-xs text-gray-400 tabular-nums"></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div id="progress_bar" class="h-1.5 rounded-full transition-all duration-300 bg-indigo-500" style="width:0%"></div>
+                    </div>
+                </div>
+                <!-- Error -->
+                <div id="error_bar" class="hidden border border-red-200 bg-red-50 rounded-lg px-4 py-3">
+                    <p class="text-sm font-semibold text-red-700">Error</p>
+                    <pre id="error_msg" class="text-xs text-red-600 mt-1 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto"></pre>
+                </div>
+                <!-- Empty state -->
+                <div id="empty_state" class="card p-10 text-center">
+                    <p class="text-sm font-semibold text-gray-700 mb-1">Document Analysis</p>
+                    <p class="text-xs text-gray-400 max-w-md mx-auto">
+                        Adversarial forgery against OCR-free Document VQA, powered by SecML-Torch
+                        (native modular evasion attack) and Pix2Struct. Choose a document, ask it a
+                        question, and set the answer you want the model to be forged into producing.
+                    </p>
+                </div>
+                <!-- Selected document preview (shown before an attack has been run) -->
+                <div id="doc_preview_panel" class="hidden card p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <p id="doc_preview_title" class="text-xs text-gray-400 font-medium uppercase tracking-wide">Selected document</p>
+                    </div>
+                    <div class="doc-frame rounded-lg border-2 border-gray-200">
+                        <div id="doc_preview_loading" class="hidden text-xs text-gray-400 text-center py-10">Loading preview…</div>
+                        <img id="doc_preview_img" class="hidden w-full block" alt="selected document preview">
+                    </div>
+                </div>
+                <!-- Results -->
+                <div id="results_panel" class="hidden card p-5">
+                    <div class="grid gap-6" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Original document</p>
+                            </div>
+                            <div class="doc-frame rounded-lg border-2 border-gray-200">
+                                <img id="orig_img" class="w-full block" alt="original document">
+                            </div>
+                            <div class="mt-3 rounded-xl p-3 bg-gray-50">
+                                <p class="text-xs text-gray-400 mb-0.5">Model answer</p>
+                                <p id="orig_pred" class="text-lg font-bold text-gray-800">—</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Forged document</p>
+                                <span id="computing_bar" class="hidden text-xs text-indigo-500 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    Optimizing…
+                                </span>
+                            </div>
+                            <div class="doc-frame rounded-lg border-2" id="adv_border" style="border-color:#e5e7eb;">
+                                <img id="adv_img" class="w-full block" alt="forged document">
+                            </div>
+                            <div class="mt-2.5 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs text-gray-500 font-medium">Attack iteration</label>
+                                    <span id="iteration_val" class="text-xs font-mono font-semibold text-indigo-600">-</span>
+                                </div>
+                                <input
+                                    id="iteration_slider"
+                                    type="range"
+                                    min="0"
+                                    max="0"
+                                    value="0"
+                                    class="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                    oninput="onIterationSlider(this.value)"
+                                    disabled
+                                >
+                            </div>
+                            <div id="iter_badge" class="mt-3 rounded-xl p-3 bg-gray-50">
+                                <p class="text-xs text-gray-400 mb-0.5">Model answer at this iteration</p>
+                                <p id="iter_pred" class="text-lg font-bold text-gray-800">—</p>
+                            </div>
+                            <div id="adv_badge" class="mt-3 rounded-xl p-3 bg-gray-50">
+                                <p class="text-xs text-gray-400 mb-0.5">Final result <span class="font-normal">(best iteration found)</span></p>
+                                <p id="adv_pred" class="text-lg font-bold text-gray-800">—</p>
+                                <p id="adv_status" class="mt-1.5 text-xs font-medium"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <script>
+  let documents = [];
+  let selectedDocId = null;
+  let activeEventSource = null;
+  let showAdvanced = false;
+  let frames = [];
+  let userDragged = false;
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  async function init() {
+    await loadDocuments();
+    document.getElementById('question').addEventListener('input', updateRunButton);
+    document.getElementById('target').addEventListener('input', updateRunButton);
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file_input');
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) uploadDocument(fileInput.files[0]);
+    });
+    ['dragover', 'dragenter'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); })
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); })
+    );
+    dropzone.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) uploadDocument(file);
+    });
+
+    initZoomFrames();
+  }
+
+  // ── Hover-to-magnify on the document images (original / forged / preview) ──
+  // Scales the image up under the cursor, panning as the mouse moves, so small
+  // print (totals, invoice numbers, dates) is readable without leaving the page.
+  function initZoomFrames() {
+    document.querySelectorAll('#results_panel .doc-frame').forEach((frame) => {
+      const img = frame.querySelector('img');
+      if (!img) return;
+      frame.addEventListener('mousemove', (e) => {
+        const rect = frame.getBoundingClientRect();
+        const xPct = ((e.clientX - rect.left) / frame.clientWidth) * 100;
+        const yPct = ((e.clientY - rect.top + frame.scrollTop) / img.offsetHeight) * 100;
+        img.style.transformOrigin = `${xPct}% ${yPct}%`;
+      });
+      frame.addEventListener('mouseenter', () => img.classList.add('zoomed'));
+      frame.addEventListener('mouseleave', () => img.classList.remove('zoomed'));
+    });
+  }
+
+  function toggleAdvanced() {
+    showAdvanced = !showAdvanced;
+    document.getElementById('advanced_attack').classList.toggle('hidden', !showAdvanced);
+    document.getElementById('advanced_label').textContent = showAdvanced ? 'Hide advanced' : 'Show advanced';
+  }
+
+  function onQuestionPreset() {
+    const preset = document.getElementById('question_preset');
+    const value = preset.value;
+    if (value && value !== '__custom__') {
+      document.getElementById('question').value = value;
+      updateRunButton();
+    } else if (value === '__custom__') {
+      document.getElementById('question').focus();
+    }
+  }
+
+  // Epsilon lives on very different scales per norm (L2 is a global budget over every
+  // pixel/channel in the document; L∞ is a per-pixel bound on a 0–255 scale), so
+  // switching norms swaps in a sane default rather than leaving a stale, wrong-scale value.
+  const NORM_DEFAULTS = {
+    l2:   { eps: 30000, label: 'Epsilon (L2, global L2 budget)' },
+    linf: { eps: 16.0, label: 'Epsilon (L∞, pixel scale 0–255)' },
+  };
+
+  function onNormChange() {
+    const norm = document.getElementById('norm').value;
+    const defaults = NORM_DEFAULTS[norm];
+    document.getElementById('eps').value = defaults.eps;
+    document.getElementById('eps_label').textContent = defaults.label;
+  }
+
+  // ── Document preview (shown inline in the main panel as soon as a document is selected) ──
+
+  async function showDocPreview(docId) {
+    const panel = document.getElementById('doc_preview_panel');
+    const img = document.getElementById('doc_preview_img');
+    const loading = document.getElementById('doc_preview_loading');
+    const doc = documents.find(d => d.id === docId);
+
+    document.getElementById('doc_preview_title').textContent = doc ? doc.name : 'Selected document';
+    document.getElementById('empty_state').classList.add('hidden');
+    document.getElementById('results_panel').classList.add('hidden');
+    img.classList.add('hidden');
+    loading.classList.remove('hidden');
+    panel.classList.remove('hidden');
+
+    try {
+      const res = await fetch(`/api/docvqa/documents/${encodeURIComponent(docId)}/preview`);
+      if (!res.ok) throw new Error('Could not load preview');
+      const data = await res.json();
+      img.src = `data:image/png;base64,${data.image_b64}`;
+      img.classList.remove('hidden');
+      loading.classList.add('hidden');
+    } catch (err) {
+      loading.textContent = err.message;
+    }
+  }
+
+  // ── Documents ─────────────────────────────────────────────────────────────
+
+  async function loadDocuments() {
+    const res = await fetch('/api/docvqa/documents');
+    documents = await res.json();
+    renderGallery();
+  }
+
+  async function uploadDocument(file) {
+    const form = new FormData();
+    form.append('file', file);
+    const gallery = document.getElementById('doc_gallery');
+    gallery.insertAdjacentHTML('afterbegin', '<div class="col-span-3 text-center py-2 text-xs text-gray-400">Uploading…</div>');
+    try {
+      const res = await fetch('/api/docvqa/upload', { method: 'POST', body: form });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
+      const doc = await res.json();
+      documents.unshift(doc);
+      selectDocument(doc.id);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      renderGallery();
+    }
+  }
+
+  function renderGallery() {
+    const gallery = document.getElementById('doc_gallery');
+    if (!documents.length) {
+      gallery.innerHTML = '<div class="col-span-3 text-center py-4 text-xs text-gray-400">No documents yet</div>';
+      return;
+    }
+    gallery.innerHTML = '';
+    for (const doc of documents) {
+      const cell = document.createElement('div');
+      cell.className = 'thumb-wrap relative cursor-pointer rounded-lg border-2 border-transparent overflow-hidden bg-white hover:border-indigo-300 hover:shadow-sm';
+      if (doc.id === selectedDocId) {
+        cell.className = cell.className.replace('border-transparent', 'border-indigo-500 shadow-md');
+      }
+      cell.innerHTML = `
+        <img src="data:image/png;base64,${doc.thumb_b64}" class="w-full aspect-[4/5] object-cover block" title="${doc.name}" alt="${doc.name}">
+        <p class="text-center text-[10px] text-gray-500 py-0.5 leading-tight px-1 truncate">${doc.name}</p>
+      `;
+      cell.addEventListener('click', () => selectDocument(doc.id));
+      gallery.appendChild(cell);
+    }
+  }
+
+  function selectDocument(id) {
+    selectedDocId = id;
+    renderGallery();
+    updateRunButton();
+    showDocPreview(id);
+  }
+
+  function updateRunButton() {
+    const btn = document.getElementById('run_btn');
+    const hint = document.getElementById('run_hint');
+    const question = document.getElementById('question').value.trim();
+    const target = document.getElementById('target').value.trim();
+    if (selectedDocId && question && target) {
+      btn.disabled = false;
+      hint.textContent = 'Ready to run';
+    } else {
+      btn.disabled = true;
+      hint.textContent = 'Choose a document, question and target answer';
+    }
+  }
+
+  // ── Iteration slider ─────────────────────────────────────────────────────
+
+  function renderFrame(frame) {
+    document.getElementById('adv_img').src = `data:image/png;base64,${frame.image_b64}`;
+    document.getElementById('iteration_val').textContent = `${frame.iteration} / ${frame.total_iterations}`;
+    const iterPred = document.getElementById('iter_pred');
+    iterPred.textContent = frame.prediction;
+    iterPred.className = `text-lg font-bold ${frame.fooled ? 'text-red-600' : 'text-gray-800'}`;
+  }
+
+  function onIterationSlider(value) {
+    const frame = frames[parseInt(value)];
+    if (frame) renderFrame(frame);
+  }
+
+  document.getElementById('iteration_slider').addEventListener('mousedown', () => { userDragged = true; });
+
+  function resetResults() {
+    // Clear any stale image/prediction state left over from a previous document or attack run,
+    // so nothing old lingers on screen while the new attack is computing.
+    frames = [];
+    userDragged = false;
+    document.getElementById('orig_img').src = '';
+    document.getElementById('orig_pred').textContent = '—';
+    document.getElementById('adv_img').src = '';
+    document.getElementById('adv_pred').textContent = '—';
+    document.getElementById('adv_status').textContent = '';
+    document.getElementById('adv_border').style.borderColor = '#e5e7eb';
+    document.getElementById('iteration_val').textContent = '-';
+    const iterPred = document.getElementById('iter_pred');
+    iterPred.textContent = '—';
+    iterPred.className = 'text-lg font-bold text-gray-800';
+    const iterationSlider = document.getElementById('iteration_slider');
+    iterationSlider.disabled = true;
+    iterationSlider.max = 0;
+    iterationSlider.value = 0;
+  }
+
+  // ── Attack / streaming ────────────────────────────────────────────────────
+
+  async function startAttack() {
+    if (!selectedDocId) return;
+
+    const params = {
+      doc_id: selectedDocId,
+      question: document.getElementById('question').value.trim(),
+      target: document.getElementById('target').value.trim(),
+      mask: document.getElementById('mask').value,
+      perturbation_model: document.getElementById('norm').value,
+      steps: parseInt(document.getElementById('steps').value),
+      step_size: parseFloat(document.getElementById('step_size').value),
+      eps: parseFloat(document.getElementById('eps').value),
+    };
+
+    document.getElementById('run_btn').disabled = true;
+    document.getElementById('empty_state').classList.add('hidden');
+    document.getElementById('doc_preview_panel').classList.add('hidden');
+    document.getElementById('status_bar').classList.remove('hidden');
+    document.getElementById('error_bar').classList.add('hidden');
+    document.getElementById('results_panel').classList.add('hidden');
+    document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-indigo-500';
+    document.getElementById('progress_bar').style.width = '0%';
+    document.getElementById('computing_bar').classList.add('hidden');
+    resetResults();
+
+    try {
+      const res = await fetch('/api/docvqa/attack', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
+      const { job_id } = await res.json();
+
+      if (activeEventSource) activeEventSource.close();
+      const es = new EventSource(`/api/stream/${job_id}`);
+      activeEventSource = es;
+      es.onmessage = (evt) => {
+        const data = JSON.parse(evt.data);
+        if (data.type === 'progress') {
+          setProgress(data.progress ?? null, data.message);
+        } else if (data.type === 'iteration') {
+          document.getElementById('results_panel').classList.remove('hidden');
+          frames.push(data);
+          frames.sort((a, b) => a.iteration - b.iteration);
+          const iterationSlider = document.getElementById('iteration_slider');
+          iterationSlider.max = frames.length - 1;
+          iterationSlider.disabled = false;
+          if (!userDragged) {
+            iterationSlider.value = frames.length - 1;
+            renderFrame(frames[frames.length - 1]);
+          }
+          setProgress(data.progress ?? null, `Attack iteration ${data.iteration}/${data.total_iterations} — model says "${data.prediction}"`);
+        } else if (data.type === 'image') {
+          document.getElementById('results_panel').classList.remove('hidden');
+          if (data.clean) {
+            document.getElementById('orig_img').src = `data:image/png;base64,${data.image_b64}`;
+            document.getElementById('orig_pred').textContent = data.prediction;
+            document.getElementById('computing_bar').classList.remove('hidden');
+          } else {
+            document.getElementById('adv_img').src = `data:image/png;base64,${data.image_b64}`;
+            document.getElementById('adv_pred').textContent = data.prediction;
+            document.getElementById('adv_border').style.borderColor = data.fooled ? '#ef4444' : '#10b981';
+            const status = document.getElementById('adv_status');
+            status.textContent = data.fooled
+              ? `✓ Forgery succeeded — model answered the target "${data.target}"`
+              : `✗ Forgery did not fully match target "${data.target}"`;
+            status.className = `mt-1.5 text-xs font-medium ${data.fooled ? 'text-red-500' : 'text-emerald-600'}`;
+            document.getElementById('computing_bar').classList.add('hidden');
+          }
+        } else if (data.type === 'done') {
+          setProgress(1, 'Attack complete');
+          document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-emerald-500';
+          document.getElementById('run_btn').disabled = false;
+          document.getElementById('computing_bar').classList.add('hidden');
+          es.close(); activeEventSource = null;
+        } else if (data.type === 'error') {
+          showError(data.message + (data.traceback ? '\n\n' + data.traceback : ''));
+          document.getElementById('run_btn').disabled = false;
+          document.getElementById('computing_bar').classList.add('hidden');
+          es.close(); activeEventSource = null;
+        }
+      };
+      es.onerror = () => {
+        showError('Lost connection to server.');
+        document.getElementById('run_btn').disabled = false;
+        es.close(); activeEventSource = null;
+      };
+    } catch (err) {
+      showError(err.message);
+      document.getElementById('run_btn').disabled = false;
+    }
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+
+  function setProgress(fraction, message) {
+    if (message) document.getElementById('status_msg').textContent = message;
+    if (fraction != null) {
+      const pct = Math.round(fraction * 100);
+      document.getElementById('progress_bar').style.width = pct + '%';
+      document.getElementById('status_pct').textContent = pct + '%';
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('status_bar').classList.add('hidden');
+    document.getElementById('error_bar').classList.remove('hidden');
+    document.getElementById('error_msg').textContent = msg;
+  }
+
+  init();
+        </script>
+    </body>
+</html>

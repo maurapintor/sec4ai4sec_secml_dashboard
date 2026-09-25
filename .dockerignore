@@ -1,0 +1,15 @@
+.git
+__pycache__/
+**/__pycache__/
+*.pyc
+.vscode
+.claude
+.DS_Store
+
+# Raw CIFAR-10 archive — the extracted data/cifar-10-batches-py/ already ships
+# everything the app reads, so the .tar.gz is redundant weight in the image.
+data/cifar-10-python.tar.gz
+
+# Stray file at repo root, not referenced by the app (static/project-logo.png is
+# the one actually served).
+Project logo+EU logo_horizontal .png

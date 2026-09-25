@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SecML-Torch Visualizer</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+        <style>
+    :root { --brand-blue: #2050c8; --brand-violet: #71318d; --brand-pink: #c52e78; --brand-soft: #f5edf8; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f6f8fc; color: #263248; }
+    .app-header { background: linear-gradient(100deg, #ffffff 0%, #fbf9fd 100%); box-shadow: 0 1px 0 rgba(32,80,200,0.08), 0 4px 16px rgba(45,54,85,0.04); }
+    .brand-lockup { display: flex; align-items: center; gap: 0.75rem; padding-right: 1.25rem; border-right: 1px solid #e7e5ef; }
+    .brand-eu { width: 220px; }
+    .top-nav { margin-left: 0.25rem; }
+    .card { border-color: #e6eaf2; box-shadow: 0 4px 18px rgba(45,54,85,0.05); }
+    .section-label { color: var(--brand-violet); }
+    @media (max-width: 760px) {
+      .app-header { flex-wrap: wrap; row-gap: 0.65rem; }
+      .brand-lockup { border-right: 0; padding-right: 0; }
+      .brand-eu { width: 190px; }
+      .top-nav { width: 100%; margin-left: 0; }
+    }
+    .bg-indigo-600 { background-color: var(--brand-blue) !important; }
+    .hover\:bg-indigo-700:hover { background-color: #173d9c !important; }
+    .text-indigo-600 { color: var(--brand-violet) !important; }
+    .hover\:text-indigo-700:hover { color: var(--brand-blue) !important; }
+    .bg-indigo-50 { background-color: var(--brand-soft) !important; }
+    .border-indigo-500 { border-color: var(--brand-pink) !important; }
+    .hover\:border-indigo-300:hover { border-color: var(--brand-pink) !important; }
+    .accent-indigo-600 { accent-color: var(--brand-blue) !important; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 500; color: #6b7280; margin-bottom: 0.25rem; }
+    .input {
+      width: 100%; background: white; border: 1px solid #e5e7eb;
+      border-radius: 6px; padding: 0.375rem 0.625rem; font-size: 0.875rem;
+      color: #111827; outline: none; transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
+    .section-label {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 0.75rem;
+    }
+    .card { background: white; border: 1px solid #f3f4f6; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .nav-link { padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.5rem; transition: all 0.15s; }
+    .nav-link-active { color: var(--brand-violet); background: var(--brand-soft); font-weight: 500; }
+    .nav-link-idle { color: #6b7280; }
+    .nav-link-idle:hover { color: #111827; background: #f3f4f6; }
+    /* pixelated upscaling for CIFAR-10 style images */
+    .img-pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
+    /* gallery thumb border transition */
+    .thumb-wrap { transition: box-shadow 0.12s, border-color 0.12s; }
+    /* slider */
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #e5e7eb; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    input[type=range]:disabled::-webkit-slider-thumb { background: #d1d5db; }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="app-header border-b border-gray-200 px-6 py-3 flex items-center gap-3 shrink-0">
+            <div class="brand-lockup shrink-0">
+                <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-12 w-12 object-contain">
+                <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="brand-eu h-12 object-contain">
+            </div>
+            <nav class="top-nav flex gap-1">
+                <a href="/visualize" class="nav-link nav-link-active">Adversarial Examples</a>
+                <a href="/curve" class="nav-link nav-link-idle">Security Curve</a>
+                <a href="/documents" class="nav-link nav-link-idle">Document Analysis</a>
+            </nav>
+        </header>
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:268px">
+                <div class="p-5 space-y-5 flex-1">
+                    <!-- Model -->
+                    <div>
+                        <p class="section-label">Model</p>
+                        <div class="field">
+                            <label>Select Model</label>
+                            <select id="model_select" class="input" onchange="onModelChange()">
+                                <option value="">Loading…</option>
+                            </select>
+                        </div>
+                        <p id="model_info" class="text-xs text-gray-400 mt-2 leading-relaxed"></p>
+                    </div>
+                    <hr class="border-gray-100">
+                    <!-- Attack params -->
+                    <div>
+                        <p class="section-label">Attack — FMN</p>
+                        <div class="space-y-3">
+                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-500 space-y-0.5">
+                                <p>attack: FMN</p>
+                                <p>steps: 50</p>
+                                <p>norm: L2</p>
+                            </div>
+                            <div>
+                                <button type="button" onclick="toggleAdvancedAttack()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                    <span id="advanced_label">Show advanced</span>
+                                </button>
+                            </div>
+                            <div id="advanced_attack" class="hidden space-y-3">
+                                <div class="field">
+                                    <label for="norm">Perturbation Norm</label>
+                                    <select id="norm" class="input mt-1">
+                                        <option value="l2" selected>L2</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>FMN Iterations</label>
+                                    <input
+                                        id="num_steps"
+                                        type="number"
+                                        class="input"
+                                        value="50"
+                                        min="1"
+                                        max="500"
+                                    >
+                                </div>
+                                <div class="field">
+                                    <label>Step Size</label>
+                                    <input
+                                        id="step_size"
+                                        type="number"
+                                        class="input"
+                                        value="0.04"
+                                        min="0.0001"
+                                        step="0.001"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Run button -->
+                <div class="p-4 border-t border-gray-100 shrink-0">
+                    <button
+                        id="run_btn"
+                        onclick="startVisualization()"
+                        disabled
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                    >
+                        Run Attack
+                    </button>
+                    <p id="run_hint" class="text-xs text-gray-400 text-center mt-2">Select an image to start</p>
+                </div>
+            </aside>
+            <!-- Main area -->
+            <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                <!-- Gallery -->
+                <div class="card p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700">Pick an Image</p>
+                            <p class="text-xs text-gray-400">Click to select, then run the attack</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="prev_btn" onclick="shiftGallery(-16)" class="text-xs text-gray-500 hover:text-indigo-600 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                &#x2190; Prev
+                            </button>
+                            <span id="gallery_range" class="text-xs text-gray-400 tabular-nums w-14 text-center"></span>
+                            <button id="next_btn" onclick="shiftGallery(16)" class="text-xs text-gray-500 hover:text-indigo-600 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-indigo-300 transition-colors">
+                                Next &#x2192;
+                            </button>
+                        </div>
+                    </div>
+                    <div id="gallery" class="grid gap-2" style="grid-template-columns: repeat(8, 1fr);">
+                        <div class="col-span-8 text-center py-8 text-sm text-gray-400">Loading images…</div>
+                    </div>
+                </div>
+                <!-- Status -->
+                <div id="status_bar" class="hidden card px-4 py-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="status_msg" class="text-sm text-gray-600">Starting…</span>
+                        <span id="status_pct" class="text-xs text-gray-400 tabular-nums"></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div id="progress_bar" class="h-1.5 rounded-full transition-all duration-300 bg-indigo-500" style="width:0%"></div>
+                    </div>
+                </div>
+                <!-- Error -->
+                <div id="error_bar" class="hidden border border-red-200 bg-red-50 rounded-lg px-4 py-3">
+                    <p class="text-sm font-semibold text-red-700">Error</p>
+                    <pre id="error_msg" class="text-xs text-red-600 mt-1 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto"></pre>
+                </div>
+                <!-- Results -->
+                <div id="results_panel" class="hidden card p-5">
+                    <div class="grid gap-8" style="grid-template-columns: 1fr 1fr;">
+                        <!-- Left: images + slider -->
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 mb-4">Perturbation Viewer</p>
+                            <!-- Image pair -->
+                            <div class="flex gap-5 justify-center items-end mb-5">
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2 font-medium">Original</p>
+                                    <div class="rounded-lg border-2 border-gray-200 overflow-hidden inline-block" style="width:160px; height:160px;">
+                                        <img id="orig_img" class="img-pixel w-full h-full object-cover" alt="original">
+                                    </div>
+                                    <p id="orig_label" class="text-xs text-gray-500 mt-1.5"></p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2 font-medium">Perturbed</p>
+                                    <div class="rounded-lg border-2 overflow-hidden inline-block transition-colors" id="adv_border" style="width:160px; height:160px; border-color:#e5e7eb;">
+                                        <img id="adv_img" class="img-pixel w-full h-full object-cover" alt="perturbed">
+                                    </div>
+                                    <p id="adv_label" class="text-xs font-semibold mt-1.5"></p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs text-gray-500 font-medium">FMN iteration</label>
+                                    <span id="iteration_val" class="text-sm font-mono font-semibold text-indigo-600">-</span>
+                                </div>
+                                <input
+                                    id="iteration_slider"
+                                    type="range"
+                                    min="0"
+                                    max="0"
+                                    value="0"
+                                    class="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                    oninput="onIterationSlider(this.value)"
+                                    disabled
+                                >
+                                <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                    <span>Loss
+                                        <strong id="loss_val" class="font-mono text-gray-700">-</strong>
+                                    </span>
+                                    <span class="text-right">L2 distance
+                                        <strong id="distance_val" class="font-mono text-gray-700">-</strong>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-xs text-gray-500 font-medium mb-1.5">Loss per Iteration</p>
+                                <div id="loss_chart" style="height: 160px;"></div>
+                            </div>
+                            <div id="distance_summary" class="hidden mt-3 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+                                Minimum L2 distance:
+                                <span id="min_distance" class="font-semibold">-</span>
+                            </div>
+                            <div id="computing_bar" class="hidden mt-3 flex items-center gap-2 text-xs text-indigo-500">
+                                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle
+                                        class="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        stroke-width="4"
+                                    ></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                Computing minimum-distance example...
+                            </div>
+                        </div>
+                        <!-- Right: prediction -->
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 mb-4">Model Prediction</p>
+                            <!-- Badge -->
+                            <div id="pred_badge" class="rounded-xl p-4 mb-5 bg-gray-50">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs text-gray-400 mb-0.5">Predicted</p>
+                                        <p id="pred_class" class="text-2xl font-bold text-gray-800">—</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-400 mb-0.5">Confidence</p>
+                                        <p id="pred_conf" class="text-lg font-semibold text-gray-700">—</p>
+                                    </div>
+                                </div>
+                                <div id="pred_status" class="mt-2 text-xs font-medium"></div>
+                            </div>
+                            <!-- Probability bars -->
+                            <p class="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">All Class Probabilities</p>
+                            <div id="prob_bars" class="space-y-1.5">
+                                <!-- populated by JS --></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <script>
+  let models = [];
+  let selectedModel = null;
+  let galleryDataset = 'cifar10';
+  let galleryStart = 0;
+  let selectedImageIndex = null;
+  let frames = [];
+  let userDragged = false;
+  let activeEventSource = null;
+  let showAdvancedAttack = false;
+
+  // Neutral placeholder shown in the "Perturbed" box before an attack has produced an image.
+  const ADV_PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+      <rect width="160" height="160" fill="#f3f4f6"/>
+      <g fill="none" stroke="#c7cbd3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="46" y="50" width="68" height="52" rx="6"/>
+        <circle cx="63" cy="68" r="6"/>
+        <path d="M46 94l18-18 14 14 12-12 24 24"/>
+      </g>
+      <text x="80" y="122" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#9ca3af">Not found yet</text>
+    </svg>
+  `)}`;
+
+  const LOSS_CHART_LAYOUT = {
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#6b7280', size: 11, family: 'Inter, system-ui, sans-serif' },
+    xaxis: { title: { text: 'Iteration', standoff: 6, font: { color: '#6b7280' } }, gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb', tickfont: { color: '#9ca3af' }, automargin: true },
+    yaxis: { title: { text: 'Loss', standoff: 6, font: { color: '#6b7280' } }, gridcolor: '#f3f4f6', zerolinecolor: '#e5e7eb', tickfont: { color: '#9ca3af' }, automargin: true },
+    margin: { l: 45, r: 12, t: 8, b: 34 },
+    showlegend: false,
+    hovermode: 'x unified',
+    hoverlabel: { bgcolor: 'white', bordercolor: '#e5e7eb', font: { color: '#374151' } },
+  };
+  const LOSS_CHART_CONFIG = { responsive: true, displayModeBar: false };
+
+  function renderLossChart(currentIteration) {
+    const xs = frames.map(f => f.iteration);
+    const ys = frames.map(f => f.loss);
+    const traces = [{
+      x: xs, y: ys, mode: 'lines', name: 'Loss',
+      line: { color: '#71318d', width: 2 },
+      hovertemplate: 'iter=%{x}  loss=%{y:.4f}<extra></extra>',
+    }];
+    if (currentIteration != null) {
+      const frame = frames.find(f => f.iteration === currentIteration);
+      if (frame) {
+        traces.push({
+          x: [frame.iteration], y: [frame.loss], mode: 'markers', name: 'Current',
+          marker: { color: '#2050c8', size: 9, line: { color: 'white', width: 1.5 } },
+          hovertemplate: 'iter=%{x}  loss=%{y:.4f}<extra></extra>',
+        });
+      }
+    }
+    Plotly.react('loss_chart', traces, LOSS_CHART_LAYOUT, LOSS_CHART_CONFIG);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  async function init() {
+    const res = await fetch('/api/models');
+    models = await res.json();
+    const sel = document.getElementById('model_select');
+    sel.innerHTML = models.map(m =>
+      `<option value="${m.id}">${m.label}</option>`
+    ).join('');
+    onModelChange(false);  // don't reload gallery yet
+    await loadGallery();
+  }
+
+  // ── Model selection ───────────────────────────────────────────────────────
+
+  function onModelChange(reloadGallery = true) {
+    const id = document.getElementById('model_select').value;
+    selectedModel = models.find(m => m.id === id) || null;
+    if (!selectedModel) return;
+
+    const src = selectedModel.source === 'robustbench' ? 'RobustBench' : 'PyTorch Hub';
+    document.getElementById('model_info').textContent = `Source: ${src} — Dataset: ${selectedModel.dataset.toUpperCase()}`;
+
+    if (reloadGallery && selectedModel.dataset !== galleryDataset) {
+      galleryDataset = selectedModel.dataset;
+      galleryStart = 0;
+      selectedImageIndex = null;
+      updateRunButton();
+      loadGallery();
+    }
+  }
+
+  function toggleAdvancedAttack() {
+    showAdvancedAttack = !showAdvancedAttack;
+    document.getElementById('advanced_attack').classList.toggle('hidden', !showAdvancedAttack);
+    document.getElementById('advanced_label').textContent = showAdvancedAttack ? 'Hide advanced' : 'Show advanced';
+  }
+
+  // ── Gallery ───────────────────────────────────────────────────────────────
+
+  async function loadGallery() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="col-span-8 text-center py-8 text-sm text-gray-400">Loading images\u2026</div>';
+
+    const dataset = selectedModel ? selectedModel.dataset : 'cifar10';
+    galleryDataset = dataset;
+
+    const res = await fetch(`/api/sample-images?dataset=${dataset}&count=16&start=${galleryStart}`);
+    const images = await res.json();
+
+    const end = galleryStart + images.length;
+    document.getElementById('gallery_range').textContent = `${galleryStart + 1}\u2013${end}`;
+    document.getElementById('prev_btn').disabled = galleryStart === 0;
+
+    gallery.innerHTML = '';
+    for (const img of images) {
+      const cell = document.createElement('div');
+      cell.className = 'thumb-wrap cursor-pointer rounded-lg border-2 border-transparent overflow-hidden bg-white hover:border-indigo-300 hover:shadow-sm';
+      cell.dataset.index = img.index;
+      if (img.index === selectedImageIndex) {
+        cell.className = cell.className.replace('border-transparent', 'border-indigo-500 shadow-md');
+      }
+
+      cell.innerHTML = `
+        <img src="data:image/png;base64,${img.image_b64}"
+             class="img-pixel w-full aspect-square block"
+             title="${img.label_name}" alt="${img.label_name}">
+        <p class="text-center text-xs text-gray-500 py-0.5 leading-tight px-1 truncate">${img.label_name}</p>
+      `;
+      cell.addEventListener('click', () => selectImage(img.index));
+      gallery.appendChild(cell);
+    }
+  }
+
+  async function shiftGallery(delta) {
+    const next = Math.max(0, galleryStart + delta);
+    if (next === galleryStart) return;
+    galleryStart = next;
+    await loadGallery();
+  }
+
+  function selectImage(index) {
+    selectedImageIndex = index;
+
+    // Close any in-progress stream
+    if (activeEventSource) { activeEventSource.close(); activeEventSource = null; }
+
+    // Clear previous results
+    frames = [];
+    userDragged = false;
+    document.getElementById('results_panel').classList.add('hidden');
+    document.getElementById('status_bar').classList.add('hidden');
+    document.getElementById('error_bar').classList.add('hidden');
+    const iterationSlider = document.getElementById('iteration_slider');
+    iterationSlider.disabled = true;
+    iterationSlider.max = 0;
+    iterationSlider.value = 0;
+    resetPerturbedPanel();
+
+    updateRunButton();
+
+    // Update highlight
+    const gallery = document.getElementById('gallery');
+    for (const cell of gallery.children) {
+      const i = parseInt(cell.dataset.index);
+      if (isNaN(i)) continue;
+      if (i === index) {
+        cell.classList.remove('border-transparent', 'hover:border-indigo-300');
+        cell.classList.add('border-indigo-500', 'shadow-md');
+      } else {
+        cell.classList.remove('border-indigo-500', 'shadow-md');
+        cell.classList.add('border-transparent', 'hover:border-indigo-300');
+      }
+    }
+  }
+
+  function updateRunButton() {
+    const btn = document.getElementById('run_btn');
+    const hint = document.getElementById('run_hint');
+    if (selectedImageIndex !== null) {
+      btn.disabled = false;
+      hint.textContent = `Image #${selectedImageIndex} selected`;
+    } else {
+      btn.disabled = true;
+      hint.textContent = 'Select an image to start';
+    }
+  }
+
+  // ── Attack / streaming ────────────────────────────────────────────────────
+
+  async function startVisualization() {
+    if (!selectedModel || selectedImageIndex === null) return;
+
+    frames = [];
+    userDragged = false;
+
+    const params = {
+      model_id:           selectedModel.id,
+      image_index:        selectedImageIndex,
+      perturbation_model: document.getElementById('norm').value,
+      num_steps:          parseInt(document.getElementById('num_steps').value),
+      step_size:          parseFloat(document.getElementById('step_size').value),
+    };
+
+    document.getElementById('run_btn').disabled = true;
+    document.getElementById('status_bar').classList.remove('hidden');
+    document.getElementById('error_bar').classList.add('hidden');
+    document.getElementById('results_panel').classList.add('hidden');
+    document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-indigo-500';
+    document.getElementById('progress_bar').style.width = '0%';
+
+    const iterationSlider = document.getElementById('iteration_slider');
+    iterationSlider.disabled = true;
+    iterationSlider.max = 0;
+    iterationSlider.value = 0;
+    document.getElementById('computing_bar').classList.add('hidden');
+    resetPerturbedPanel();
+
+    try {
+      const res = await fetch('/api/visualize', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
+      const { job_id } = await res.json();
+
+      if (activeEventSource) activeEventSource.close();
+      const es = new EventSource(`/api/stream/${job_id}`);
+      activeEventSource = es;
+      es.onmessage = (evt) => {
+        const data = JSON.parse(evt.data);
+        if (data.type === 'progress') {
+          setProgress(data.progress ?? null, data.message);
+        } else if (data.type === 'image') {
+          if (data.clean) {
+            resetPerturbedPanel();
+            document.getElementById('results_panel').classList.remove('hidden');
+            document.getElementById('orig_img').src = `data:image/png;base64,${data.image_b64}`;
+            document.getElementById('orig_label').textContent = `True: ${data.true_class}`;
+            document.getElementById('computing_bar').classList.remove('hidden');
+          } else {
+            frames.push(data);
+            frames.sort((a, b) => a.iteration - b.iteration);
+            iterationSlider.max = frames.length - 1;
+            iterationSlider.disabled = false;
+            if (!userDragged) {
+              iterationSlider.value = frames.length - 1;
+              renderFrame(frames[frames.length - 1]);
+              renderLossChart(frames[frames.length - 1].iteration);
+            } else {
+              renderLossChart(frames[parseInt(iterationSlider.value)]?.iteration);
+            }
+            document.getElementById('distance_summary').classList.remove('hidden');
+            document.getElementById('min_distance').textContent = frames[frames.length - 1].epsilon.toFixed(4);
+          }
+        } else if (data.type === 'done') {
+          setProgress(1, 'Attack complete');
+          document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-emerald-500';
+          document.getElementById('run_btn').disabled = false;
+          document.getElementById('computing_bar').classList.add('hidden');
+          es.close(); activeEventSource = null;
+        } else if (data.type === 'error') {
+          showError(data.message + (data.traceback ? '\n\n' + data.traceback : ''));
+          document.getElementById('run_btn').disabled = false;
+          document.getElementById('computing_bar').classList.add('hidden');
+          es.close(); activeEventSource = null;
+        }
+      };
+      es.onerror = () => {
+        showError('Lost connection to server.');
+        document.getElementById('run_btn').disabled = false;
+        es.close(); activeEventSource = null;
+      };
+    } catch (err) {
+      showError(err.message);
+      document.getElementById('run_btn').disabled = false;
+    }
+  }
+
+  document.getElementById('iteration_slider').addEventListener('mousedown', () => { userDragged = true; });
+
+  function onIterationSlider(value) {
+    const frame = frames[parseInt(value)];
+    if (frame) {
+      renderFrame(frame);
+      renderLossChart(frame.iteration);
+    }
+  }
+
+  function resetPerturbedPanel() {
+    // Clear any stale perturbed-image / prediction state left over from a previous image
+    // or attack run, so nothing old lingers on screen while the new attack is computing.
+    document.getElementById('adv_img').src = ADV_PLACEHOLDER_SVG;
+    document.getElementById('adv_label').textContent = '';
+    document.getElementById('adv_border').style.borderColor = '#e5e7eb';
+    document.getElementById('iteration_val').textContent = '-';
+    document.getElementById('loss_val').textContent = '-';
+    document.getElementById('distance_val').textContent = '-';
+
+    const badge = document.getElementById('pred_badge');
+    badge.className = 'rounded-xl p-4 mb-5 bg-gray-50';
+    const predClass = document.getElementById('pred_class');
+    predClass.textContent = '—';
+    predClass.className = 'text-2xl font-bold text-gray-800';
+    document.getElementById('pred_conf').textContent = '—';
+    document.getElementById('pred_status').textContent = '';
+
+    document.getElementById('prob_bars').innerHTML = '';
+    document.getElementById('distance_summary').classList.add('hidden');
+    renderLossChart(null);
+  }
+
+  function renderFrame(frame) {
+    // Perturbed image
+    document.getElementById('adv_img').src = `data:image/png;base64,${frame.image_b64}`;
+    document.getElementById('iteration_val').textContent = `${frame.iteration} / ${frame.total_iterations}`;
+    document.getElementById('loss_val').textContent = frame.loss.toFixed(4);
+    document.getElementById('distance_val').textContent = frame.epsilon.toFixed(4);
+
+    const correct = frame.correct;
+    const advLabel = document.getElementById('adv_label');
+    advLabel.textContent = frame.predicted_class;
+    advLabel.className = `text-xs font-semibold mt-1.5 ${correct ? 'text-emerald-600' : 'text-red-500'}`;
+
+    document.getElementById('adv_border').style.borderColor = correct ? '#10b981' : '#ef4444';
+
+    // Badge
+    const badge = document.getElementById('pred_badge');
+    badge.className = `rounded-xl p-4 mb-5 ${correct ? 'bg-emerald-50' : 'bg-red-50'}`;
+    const predClass = document.getElementById('pred_class');
+    predClass.textContent = frame.predicted_class;
+    predClass.className = `text-2xl font-bold ${correct ? 'text-emerald-700' : 'text-red-600'}`;
+    document.getElementById('pred_conf').textContent = (frame.confidence * 100).toFixed(1) + '%';
+
+    const status = document.getElementById('pred_status');
+    if (frame.epsilon === 0) {
+      status.textContent = correct ? '\u2713 Correct prediction (clean image)' : '\u2717 Misclassified even without attack';
+      status.className = `mt-2 text-xs font-medium ${correct ? 'text-emerald-600' : 'text-red-500'}`;
+    } else {
+      status.textContent = correct ? '\u2713 FMN did not find a successful perturbation' : `\u2717 Fooled at minimum L2 distance = ${frame.epsilon.toFixed(4)}`;
+      status.className = `mt-2 text-xs font-medium ${correct ? 'text-emerald-600' : 'text-red-500'}`;
+    }
+
+    // Probability bars
+    const classNames = frame.class_names || frame.probs.map((_, i) => String(i));
+    const indexed = frame.probs.map((p, i) => ({ p, i, name: classNames[i] }));
+
+    const barsDiv = document.getElementById('prob_bars');
+    barsDiv.innerHTML = '';
+    for (const { p, i, name } of indexed) {
+      const isTrue = i === frame.true_idx;
+      const isPred = i === frame.predicted_idx;
+      const barBg = isPred && isTrue ? '#10b981' : isPred ? '#ef4444' : isTrue ? '#f59e0b' : '#d1d5db';
+      const pct = (p * 100).toFixed(1);
+      const labelCls = isPred ? 'font-semibold text-gray-800' : 'text-gray-500';
+      const marker = isTrue && isPred ? ' \u2605' : isTrue ? ' (true)' : '';
+
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2';
+      row.innerHTML = `
+        <span class="text-xs ${labelCls} truncate" style="width:88px">${name}${marker}</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div class="h-2 rounded-full transition-all duration-200" style="width:${pct}%; background:${barBg};"></div>
+        </div>
+        <span class="text-xs tabular-nums text-gray-500 text-right" style="width:38px">${pct}%</span>
+      `;
+      barsDiv.appendChild(row);
+    }
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+
+  function setProgress(fraction, message) {
+    if (message) document.getElementById('status_msg').textContent = message;
+    if (fraction != null) {
+      const pct = Math.round(fraction * 100);
+      document.getElementById('progress_bar').style.width = pct + '%';
+      document.getElementById('status_pct').textContent = pct + '%';
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('status_bar').classList.add('hidden');
+    document.getElementById('error_bar').classList.remove('hidden');
+    document.getElementById('error_msg').textContent = msg;
+  }
+
+  init();
+  renderLossChart(null);
+        </script>
+    </body>
+</html>

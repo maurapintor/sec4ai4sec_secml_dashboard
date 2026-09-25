@@ -1,0 +1,14 @@
+# Datasets & model weights — large, regenerable/downloadable, don't belong in git.
+# (Docker image bakes them in separately at build time via COPY, not via git.)
+data/
+models/
+
+__pycache__/
+**/__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.claude/
+
+# Stray file at repo root, not referenced by the app.
+Project logo+EU logo_horizontal .png
