@@ -121,7 +121,16 @@
                                 <p>attack: pix2struct forgery</p>
                                 <p>steps: 20</p>
                                 <p>norm: L2</p>
-                                <p>mask: dominant color channel</p>
+                            </div>
+                            <div class="field">
+                                <label for="mask">Perturbation region</label>
+                                <select id="mask" class="input">
+                                    <option value="dominant_channel" selected>Dominant color channel (least visible)</option>
+                                    <option value="bottom_right_corner">Bottom-right corner only</option>
+                                    <option value="dark_pixels">Content pixels only (excludes white background)</option>
+                                    <option value="white_pixels">White pixels only (background)</option>
+                                    <option value="include_all">Entire document</option>
+                                </select>
                             </div>
                             <div>
                                 <button type="button" onclick="toggleAdvanced()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
@@ -129,16 +138,6 @@
                                 </button>
                             </div>
                             <div id="advanced_attack" class="hidden space-y-3">
-                                <div class="field">
-                                    <label for="mask">Perturbation region</label>
-                                    <select id="mask" class="input">
-                                        <option value="dominant_channel" selected>Dominant color channel (least visible)</option>
-                                        <option value="dark_pixels">Content pixels only (excludes white background)</option>
-                                        <option value="white_pixels">White pixels only (background)</option>
-                                        <option value="include_all">Entire document</option>
-                                        <option value="bottom_right_corner">Bottom-right corner only</option>
-                                    </select>
-                                </div>
                                 <div class="field">
                                     <label for="norm">Perturbation norm</label>
                                     <select id="norm" class="input" onchange="onNormChange()">
