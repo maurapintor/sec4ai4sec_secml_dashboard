@@ -27,13 +27,17 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
-# Hugging Face cache for the Pix2Struct-DocVQA checkpoint (~1.1GB, downloaded on
-# first use of the Document Analysis tab). Mount this path as a volume so the
-# download survives container restarts/recreation instead of happening every time.
+# Bake the Pix2Struct-DocVQA checkpoint (~1.1GB) and the font used to render the
+# question header into the image, so a fresh container (e.g. a RunPod pod) can run
+# attacks immediately without hitting Hugging Face. Kept above `COPY . .` so code
+# edits don't invalidate this layer.
 ENV HF_HOME=/app/.cache/huggingface
-RUN mkdir -p /app/.cache/huggingface
+RUN python -c "\
+from huggingface_hub import hf_hub_download, snapshot_download; \
+snapshot_download('google/pix2struct-docvqa-base', ignore_patterns=['*.bin']); \
+hf_hub_download('ybelkada/fonts', 'Arial.TTF')"
+
+COPY . .
 
 EXPOSE 9000
 

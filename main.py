@@ -6,7 +6,7 @@ import uuid
 from typing import Dict, List
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
@@ -21,6 +21,7 @@ from evaluator import (
 from docvqa_runner import (
     add_uploaded_document,
     get_document_preview,
+    get_forged_png,
     list_documents,
     run_docvqa_attack,
 )
@@ -217,6 +218,19 @@ async def docvqa_document_preview(doc_id: str) -> Dict:
         return get_document_preview(doc_id)
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/docvqa/forged/{forged_id}/{kind}.png")
+async def docvqa_forged_png(forged_id: str, kind: str) -> Response:
+    try:
+        png = get_forged_png(forged_id, kind)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return Response(
+        png,
+        media_type="image/png",
+        headers={"Content-Disposition": f'attachment; filename="{kind}_receipt.png"'},
+    )
 
 
 @app.post("/api/docvqa/upload")

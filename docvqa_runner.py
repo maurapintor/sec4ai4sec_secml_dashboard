@@ -14,6 +14,8 @@ import uuid
 import torch
 from PIL import Image
 
+from device import get_device
+
 from docvqa.attack import attack_pix2struct
 from docvqa.masks import (
     mask_below_gray_threshold,
@@ -47,7 +49,7 @@ def _get_model() -> Pix2StructModel:
     global _model
     with _model_lock:
         if _model is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = get_device()
             _model = Pix2StructModel(device=device)
     return _model
 
@@ -200,6 +202,30 @@ def get_document_preview(doc_id: str) -> dict:
     }
 
 
+# ── Forged documents (kept at original resolution for download) ──────────────────
+
+_forged: dict[str, dict[str, bytes]] = {}
+
+
+def _png_bytes(image: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    image.convert("RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _store_forged(original: Image.Image, forged: Image.Image) -> str:
+    """Keep the original and forged documents as lossless full-resolution PNGs. Returns their id."""
+    forged_id = str(uuid.uuid4())
+    _forged[forged_id] = {"original": _png_bytes(original), "forged": _png_bytes(forged)}
+    return forged_id
+
+
+def get_forged_png(forged_id: str, kind: str) -> bytes:
+    if forged_id not in _forged or kind not in ("original", "forged"):
+        raise ValueError(f"Unknown document: {forged_id!r}/{kind!r}")
+    return _forged[forged_id][kind]
+
+
 # ── Attack ───────────────────────────────────────────────────────────────────────
 
 def run_docvqa_attack(config: dict, q: queue.Queue) -> None:
@@ -262,6 +288,7 @@ def run_docvqa_attack(config: dict, q: queue.Queue) -> None:
             "prediction": adv_answer,
             "target": target,
             "fooled": _normalize_answer(adv_answer) == _normalize_answer(target),
+            "forged_id": _store_forged(image, adv_image),
         })
 
         q.put({"type": "done", "message": "Attack complete!"})

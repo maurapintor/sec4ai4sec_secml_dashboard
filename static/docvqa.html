@@ -3,320 +3,262 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SecML-Torch Document Analysis</title>
+        <title>Document Analysis</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
-    :root { --brand-blue: #2050c8; --brand-violet: #71318d; --brand-pink: #c52e78; --brand-soft: #f5edf8; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #f6f8fc; color: #263248; }
-    .app-header { background: linear-gradient(100deg, #ffffff 0%, #fbf9fd 100%); box-shadow: 0 1px 0 rgba(32,80,200,0.08), 0 4px 16px rgba(45,54,85,0.04); }
-    .brand-lockup { display: flex; align-items: center; gap: 0.75rem; padding-right: 1.25rem; border-right: 1px solid #e7e5ef; }
-    .brand-eu { width: 220px; }
-    .top-nav { margin-left: 0.25rem; }
-    .card { border-color: #e6eaf2; box-shadow: 0 4px 18px rgba(45,54,85,0.05); }
-    .section-label { color: var(--brand-violet); }
-    @media (max-width: 760px) {
-      .app-header { flex-wrap: wrap; row-gap: 0.65rem; }
-      .brand-lockup { border-right: 0; padding-right: 0; }
-      .brand-eu { width: 190px; }
-      .top-nav { width: 100%; margin-left: 0; }
+    :root {
+      --brand-blue: #2050c8; --brand-violet: #71318d; --brand-pink: #c52e78; --brand-soft: #f5edf8;
+      --ok: #0f9d6b; --ok-soft: #e7f6ef; --bad: #d64545; --line: #e6eaf2; --muted: #7a8499;
     }
-    .bg-indigo-600 { background-color: var(--brand-blue) !important; }
-    .hover\:bg-indigo-700:hover { background-color: #173d9c !important; }
-    .text-indigo-600 { color: var(--brand-violet) !important; }
-    .hover\:text-indigo-700:hover { color: var(--brand-blue) !important; }
-    .bg-indigo-50 { background-color: var(--brand-soft) !important; }
-    .border-indigo-500 { border-color: var(--brand-pink) !important; }
-    .hover\:border-indigo-300:hover { border-color: var(--brand-pink) !important; }
-    .accent-indigo-600 { accent-color: var(--brand-blue) !important; }
-    input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
-    .field label { display: block; font-size: 0.75rem; font-weight: 500; color: #6b7280; margin-bottom: 0.25rem; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f6f8fc; color: #1f2937; }
+    .brand-lockup { display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #f0eef5; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 18px rgba(45,54,85,0.05); }
+    .section-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand-violet); margin-bottom: 0.6rem; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); margin-bottom: 0.3rem; }
     .input {
-      width: 100%; background: white; border: 1px solid #e5e7eb;
-      border-radius: 6px; padding: 0.375rem 0.625rem; font-size: 0.875rem;
-      color: #111827; outline: none; transition: border-color 0.15s;
+      width: 100%; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 0.5rem 0.7rem; font-size: 0.9rem; color: #111827; outline: none; transition: border-color 0.15s;
     }
     .input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
-    .section-label {
-      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
-      text-transform: uppercase; color: #9ca3af; margin-bottom: 0.75rem;
-    }
-    .card { background: white; border: 1px solid #f3f4f6; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .nav-link { padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.5rem; transition: all 0.15s; }
-    .nav-link-active { color: var(--brand-violet); background: var(--brand-soft); font-weight: 500; }
-    .nav-link-idle { color: #6b7280; }
-    .nav-link-idle:hover { color: #111827; background: #f3f4f6; }
-    .thumb-wrap { transition: box-shadow 0.12s, border-color 0.12s; }
-    .doc-frame { overflow: hidden; background: #fafafb; }
-    #results_panel .doc-frame img { cursor: zoom-in; transition: transform 0.08s linear; }
-    #results_panel .doc-frame img.zoomed { transform: scale(2.2); }
+    .thumb { border: 2px solid transparent; transition: border-color 0.12s, box-shadow 0.12s; }
+    .thumb:hover { border-color: #e2c6ee; }
+    .thumb.selected { border-color: var(--brand-pink); box-shadow: 0 2px 10px rgba(197,46,120,0.18); }
     .dropzone { border: 1.5px dashed #d7dbe4; border-radius: 8px; transition: border-color 0.15s, background 0.15s; }
     .dropzone:hover, .dropzone.dragover { border-color: var(--brand-blue); background: var(--brand-soft); }
+    .run-btn { background: var(--brand-blue); }
+    .run-btn:hover:not(:disabled) { background: #173d9c; }
+    .run-btn:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+
+    .doc-frame { flex: 1; min-height: 0; overflow: hidden; background: #fafafb; border: 2px solid var(--line); border-radius: 10px; transition: border-color 0.3s; }
+    .doc-frame img { display: block; width: 100%; height: 100%; object-fit: contain; transition: transform 0.08s linear; }
+    .zoom-on .doc-frame img { cursor: zoom-in; }
+    .zoom-on .doc-frame img.zoomed { transform: scale(2.5); }
+    .tool-btn { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); background: #fff; }
+    .tool-btn:hover { color: #111827; }
+    .tool-btn.active { color: var(--brand-violet); background: var(--brand-soft); border-color: #e2c6ee; }
+    .doc-frame.ok { border-color: var(--ok); }
+
+    .answer { font-size: 2rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; word-break: break-word; }
+    .answer-box { border-radius: 12px; padding: 1rem 1.25rem; background: #f6f7fb; transition: background 0.3s; }
+    .answer-box.ok { background: var(--ok-soft); }
+    .answer-box.ok .answer { color: var(--ok); }
+    .pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; }
+    .pill-ok { background: var(--ok); color: #fff; }
+    .pill-bad { background: #fde8e8; color: var(--bad); }
+    .pill-run { background: var(--brand-soft); color: var(--brand-violet); }
+
     input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #e5e7eb; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
     input[type=range]:disabled::-webkit-slider-thumb { background: #d1d5db; }
+
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; overflow: auto; }
+      .layout aside { width: 100% !important; }
+      .compare { grid-template-columns: 1fr !important; }
+      .answer { font-size: 1.5rem; }
+    }
         </style>
     </head>
-    <body class="bg-slate-50 text-gray-800 h-screen flex flex-col overflow-hidden">
-        <!-- Header -->
-        <header class="app-header border-b border-gray-200 px-6 py-3 flex items-center gap-3 shrink-0">
-            <div class="brand-lockup shrink-0">
-                <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-12 w-12 object-contain">
-                <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="brand-eu h-12 object-contain">
-            </div>
-            <nav class="top-nav flex gap-1">
-                <a href="/documents" class="nav-link nav-link-active">Document Analysis</a>
-            </nav>
-            <!-- Adversarial Examples (/visualize) and Security Curve (/curve) tabs are
-                 temporarily unlinked from the nav — CIFAR-10 download/eval is slow right
-                 now. Routes still work directly by URL; re-add the links here to bring
-                 them back. -->
-        </header>
-        <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar -->
-            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:288px">
-                <div class="p-5 space-y-5 flex-1">
-                    <!-- Document -->
+    <body class="h-screen flex overflow-hidden">
+
+        <div class="layout flex flex-1 overflow-hidden">
+            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:300px">
+                <div class="brand-lockup px-5 pt-4 pb-3 shrink-0">
+                    <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-11 w-11 object-contain">
+                    <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="h-11 flex-1 min-w-0 object-contain object-left">
+                </div>
+                <div class="p-5 space-y-6 flex-1">
                     <div>
                         <p class="section-label">Document</p>
-                        <label id="dropzone" class="dropzone flex flex-col items-center justify-center gap-1 py-4 cursor-pointer text-center">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0-9l-3 3m3-3l3 3"/>
+                        <div id="doc_gallery" class="grid grid-cols-3 gap-1.5">
+                            <div class="col-span-3 text-center py-4 text-xs text-gray-400">Loading…</div>
+                        </div>
+                        <label id="dropzone" class="dropzone mt-2 flex items-center justify-center gap-2 py-2.5 cursor-pointer">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
                             </svg>
-                            <span class="text-xs text-gray-500">Upload a document</span>
-                            <span class="text-[10px] text-gray-400">JPG or PNG</span>
+                            <span class="text-xs text-gray-500">Upload your own</span>
                             <input id="file_input" type="file" accept="image/*" class="hidden">
                         </label>
-                        <p class="text-xs text-gray-400 mt-3 mb-1.5">Or choose an existing document — preview shows on the right</p>
-                        <div id="doc_gallery" class="grid grid-cols-3 gap-1.5">
-                            <div class="col-span-3 text-center py-4 text-xs text-gray-400">Loading documents…</div>
-                        </div>
                     </div>
-                    <hr class="border-gray-100">
-                    <!-- Question / target -->
+
                     <div class="space-y-3">
-                        <p class="section-label">Query</p>
+                        <p class="section-label">Attack</p>
                         <div class="field">
-                            <label for="question_preset">Question about the document</label>
-                            <select id="question_preset" class="input mb-2" onchange="onQuestionPreset()">
-                                <option value="How much is the total?" selected>How much is the total?</option>
-                                <option value="What is the invoice number?">What is the invoice number?</option>
-                                <option value="What is the date?">What is the date?</option>
-                                <option value="__custom__">Other (type your own)…</option>
+                            <label for="question_preset">Question</label>
+                            <select id="question_preset" class="input" onchange="onQuestionPreset()">
+                                <option value="How much is the total?" data-target="$0.00" selected>How much is the total?</option>
+                                <option value="What is the date?" data-target="01/01/2000">What is the date?</option>
+                                <option value="__custom__">Other…</option>
                             </select>
-                            <input id="question" type="text" class="input" placeholder="How much is the total?" value="How much is the total?">
+                            <input id="question" type="text" class="input mt-2 hidden" value="How much is the total?" placeholder="Type a question">
                         </div>
                         <div class="field">
                             <label for="target">Target answer</label>
-                            <input id="target" type="text" class="input" placeholder="$0.00" value="$0.00">
+                            <input id="target" type="text" class="input" value="$0.00">
                         </div>
-                    </div>
-                    <hr class="border-gray-100">
-                    <!-- Attack params -->
-                    <div>
-                        <p class="section-label">Attack — Pix2Struct</p>
-                        <div class="space-y-3">
-                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-500 space-y-0.5">
-                                <p>attack: pix2struct forgery</p>
-                                <p>steps: 20</p>
-                                <p>norm: L2</p>
-                            </div>
+                        <div class="field">
+                            <label for="mask">Perturbation mask</label>
+                            <select id="mask" class="input">
+                                <option value="dominant_channel" selected>Least visible</option>
+                                <option value="dark_pixels">Text only</option>
+                                <option value="white_pixels">Background only</option>
+                                <option value="bottom_right_corner">Bottom-right corner</option>
+                                <option value="include_all">Whole page</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="toggleAdvanced()" class="text-xs font-medium text-gray-400 hover:text-gray-600">
+                            <span id="advanced_label">Advanced</span>
+                        </button>
+                        <div id="advanced_attack" class="hidden space-y-3">
                             <div class="field">
-                                <label for="mask">Perturbation region</label>
-                                <select id="mask" class="input">
-                                    <option value="dominant_channel" selected>Dominant color channel (least visible)</option>
-                                    <option value="bottom_right_corner">Bottom-right corner only</option>
-                                    <option value="dark_pixels">Content pixels only (excludes white background)</option>
-                                    <option value="white_pixels">White pixels only (background)</option>
-                                    <option value="include_all">Entire document</option>
+                                <label for="norm">Norm</label>
+                                <select id="norm" class="input" onchange="onNormChange()">
+                                    <option value="l2" selected>L2</option>
+                                    <option value="linf">L∞</option>
                                 </select>
                             </div>
-                            <div>
-                                <button type="button" onclick="toggleAdvanced()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
-                                    <span id="advanced_label">Show advanced</span>
-                                </button>
-                            </div>
-                            <div id="advanced_attack" class="hidden space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <div class="field">
-                                    <label for="norm">Perturbation norm</label>
-                                    <select id="norm" class="input" onchange="onNormChange()">
-                                        <option value="l2" selected>L2</option>
-                                        <option value="linf">L∞</option>
-                                    </select>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div class="field">
-                                        <label>Steps</label>
-                                        <input id="steps" type="number" class="input" value="20" min="1" max="200">
-                                    </div>
-                                    <div class="field">
-                                        <label>Step size</label>
-                                        <input id="step_size" type="number" class="input" value="10.0" min="0.01" step="0.1">
-                                    </div>
+                                    <label for="steps">Steps</label>
+                                    <input id="steps" type="number" class="input" value="20" min="1" max="200">
                                 </div>
                                 <div class="field">
-                                    <label id="eps_label">Epsilon (L2, global L2 budget)</label>
+                                    <label for="step_size">Step size</label>
+                                    <input id="step_size" type="number" class="input" value="10.0" min="0.01" step="0.1">
+                                </div>
+                                <div class="field">
+                                    <label for="eps">ε</label>
                                     <input id="eps" type="number" class="input" value="30000" min="0.1" step="1">
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Run button -->
                 <div class="p-4 border-t border-gray-100 shrink-0">
-                    <button
-                        id="run_btn"
-                        onclick="startAttack()"
-                        disabled
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
-                    >
-                        Run Attack
+                    <button id="run_btn" onclick="startAttack()" disabled
+                        class="run-btn w-full text-white font-semibold py-3 rounded-lg transition-colors">
+                        Run attack
                     </button>
-                    <p id="run_hint" class="text-xs text-gray-400 text-center mt-2">Choose a document, question and target answer</p>
                 </div>
             </aside>
-            <!-- Main area -->
-            <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-                <!-- Status -->
-                <div id="status_bar" class="hidden card px-4 py-3">
-                    <div class="flex items-center justify-between mb-2">
-                        <span id="status_msg" class="text-sm text-gray-600">Starting…</span>
-                        <span id="status_pct" class="text-xs text-gray-400 tabular-nums"></span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-1.5">
-                        <div id="progress_bar" class="h-1.5 rounded-full transition-all duration-300 bg-indigo-500" style="width:0%"></div>
-                    </div>
-                </div>
-                <!-- Error -->
+
+            <main class="flex-1 min-h-0 overflow-hidden p-6 flex flex-col gap-4">
                 <div id="error_bar" class="hidden border border-red-200 bg-red-50 rounded-lg px-4 py-3">
-                    <p class="text-sm font-semibold text-red-700">Error</p>
-                    <pre id="error_msg" class="text-xs text-red-600 mt-1 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto"></pre>
+                    <p id="error_msg" class="text-sm text-red-700"></p>
+                    <details id="error_details" class="hidden mt-1">
+                        <summary class="text-xs text-red-400 cursor-pointer">Traceback</summary>
+                        <pre id="error_trace" class="text-xs text-red-600 mt-1 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto"></pre>
+                    </details>
                 </div>
-                <!-- Empty state -->
-                <div id="empty_state" class="card p-10 text-center">
-                    <p class="text-sm font-semibold text-gray-700 mb-1">Document Analysis</p>
-                    <p class="text-xs text-gray-400 max-w-md mx-auto">
-                        Adversarial forgery against OCR-free Document VQA, powered by SecML-Torch
-                        (native modular evasion attack) and Pix2Struct. Choose a document, ask it a
-                        question, and set the answer you want the model to be forged into producing.
-                    </p>
+
+                <div id="empty_state" class="flex-1 flex items-center justify-center text-gray-400 text-sm">
+                    Pick a document to start
                 </div>
-                <!-- Selected document preview (shown before an attack has been run) -->
-                <div id="doc_preview_panel" class="hidden card p-5">
-                    <div class="flex items-center justify-between mb-2">
-                        <p id="doc_preview_title" class="text-xs text-gray-400 font-medium uppercase tracking-wide">Selected document</p>
+
+                <!-- Question + answers -->
+                <div id="answers_panel" class="hidden card p-5">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <p class="text-lg font-semibold text-gray-800">“<span id="question_echo"></span>”</p>
+                        <span id="status_pill" class="pill pill-run hidden"></span>
                     </div>
-                    <div class="doc-frame rounded-lg border-2 border-gray-200">
-                        <div id="doc_preview_loading" class="hidden text-xs text-gray-400 text-center py-10">Loading preview…</div>
-                        <img id="doc_preview_img" class="hidden w-full block" alt="selected document preview">
+                    <div class="compare grid gap-4" style="grid-template-columns: 1fr 1fr;">
+                        <div class="answer-box">
+                            <p class="text-xs font-medium text-gray-500 mb-1">Original document</p>
+                            <p id="orig_pred" class="answer text-gray-800">…</p>
+                        </div>
+                        <div id="adv_box" class="answer-box">
+                            <p class="text-xs font-medium text-gray-500 mb-1">Forged document</p>
+                            <p id="adv_pred" class="answer text-gray-800">…</p>
+                        </div>
+                    </div>
+                    <div id="progress_track" class="hidden mt-4 w-full bg-gray-100 rounded-full h-1">
+                        <div id="progress_bar" class="h-1 rounded-full transition-all duration-300" style="width:0%; background: var(--brand-blue);"></div>
                     </div>
                 </div>
-                <!-- Results -->
-                <div id="results_panel" class="hidden card p-5">
-                    <div class="grid gap-6" style="grid-template-columns: 1fr 1fr;">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Original document</p>
+
+                <!-- Documents -->
+                <div id="docs_panel" class="hidden card p-5 flex-1 min-h-0 flex flex-col">
+                    <div class="compare grid gap-6 flex-1 min-h-0" style="grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr);">
+                        <div class="flex flex-col min-h-0">
+                            <div class="flex items-center justify-between mb-2 h-7">
+                                <p class="text-xs font-medium text-gray-500">Original</p>
+                                <button id="zoom_btn" type="button" class="tool-btn" onclick="toggleZoom()">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5M11 8v6M8 11h6"/></svg>
+                                    Zoom
+                                </button>
                             </div>
-                            <div class="doc-frame rounded-lg border-2 border-gray-200">
-                                <img id="orig_img" class="w-full block" alt="original document">
-                            </div>
-                            <div class="mt-3 rounded-xl p-3 bg-gray-50">
-                                <p class="text-xs text-gray-400 mb-0.5">Model answer</p>
-                                <p id="orig_pred" class="text-lg font-bold text-gray-800">—</p>
+                            <div class="doc-frame">
+                                <img id="orig_img" alt="original document">
                             </div>
                         </div>
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Forged document</p>
-                                <span id="computing_bar" class="hidden text-xs text-indigo-500 flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                    </svg>
-                                    Optimizing…
-                                </span>
+                        <div id="adv_col" class="hidden flex flex-col min-h-0">
+                            <div class="flex items-center gap-3 mb-2 h-7">
+                                <p class="text-xs font-medium text-gray-500">Forged</p>
+                                <input id="iteration_slider" type="range" min="0" max="0" value="0"
+                                    class="flex-1 disabled:opacity-50" oninput="onIterationSlider(this.value)" disabled>
+                                <span id="iteration_val" class="text-xs font-mono text-gray-400 w-14 text-right"></span>
+                                <button id="download_btn" type="button" class="hidden text-xs font-medium text-white rounded-md px-2.5 py-1" style="background: var(--brand-blue);" onclick="downloadReceipts()">Download receipt</button>
                             </div>
-                            <div class="doc-frame rounded-lg border-2" id="adv_border" style="border-color:#e5e7eb;">
-                                <img id="adv_img" class="w-full block" alt="forged document">
-                            </div>
-                            <div class="mt-2.5 space-y-1.5">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-xs text-gray-500 font-medium">Attack iteration</label>
-                                    <span id="iteration_val" class="text-xs font-mono font-semibold text-indigo-600">-</span>
-                                </div>
-                                <input
-                                    id="iteration_slider"
-                                    type="range"
-                                    min="0"
-                                    max="0"
-                                    value="0"
-                                    class="w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    oninput="onIterationSlider(this.value)"
-                                    disabled
-                                >
-                            </div>
-                            <div id="iter_badge" class="mt-3 rounded-xl p-3 bg-gray-50">
-                                <p class="text-xs text-gray-400 mb-0.5">Model answer at this iteration</p>
-                                <p id="iter_pred" class="text-lg font-bold text-gray-800">—</p>
-                            </div>
-                            <div id="adv_badge" class="mt-3 rounded-xl p-3 bg-gray-50">
-                                <p class="text-xs text-gray-400 mb-0.5">Final result <span class="font-normal">(best iteration found)</span></p>
-                                <p id="adv_pred" class="text-lg font-bold text-gray-800">—</p>
-                                <p id="adv_status" class="mt-1.5 text-xs font-medium"></p>
+                            <div id="adv_frame" class="doc-frame">
+                                <img id="adv_img" alt="forged document">
                             </div>
                         </div>
                     </div>
                 </div>
             </main>
         </div>
+
         <script>
   let documents = [];
   let selectedDocId = null;
   let activeEventSource = null;
-  let showAdvanced = false;
   let frames = [];
   let userDragged = false;
+  let running = false;
+  let forgedId = null;
 
-  // ── Init ──────────────────────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
 
   async function init() {
     await loadDocuments();
-    document.getElementById('question').addEventListener('input', updateRunButton);
-    document.getElementById('target').addEventListener('input', updateRunButton);
+    $('question').addEventListener('input', updateRunButton);
+    $('target').addEventListener('input', updateRunButton);
 
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('file_input');
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) uploadDocument(fileInput.files[0]);
-    });
+    const dropzone = $('dropzone');
+    const fileInput = $('file_input');
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) uploadDocument(fileInput.files[0]); });
     ['dragover', 'dragenter'].forEach(evt =>
-      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); })
-    );
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(evt =>
-      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); })
-    );
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }));
     dropzone.addEventListener('drop', (e) => {
       const file = e.dataTransfer.files[0];
       if (file) uploadDocument(file);
     });
 
+    $('iteration_slider').addEventListener('mousedown', () => { userDragged = true; });
     initZoomFrames();
+    if (documents.length) selectDocument(documents[0].id);
   }
 
-  // ── Hover-to-magnify on the document images (original / forged / preview) ──
-  // Scales the image up under the cursor, panning as the mouse moves, so small
-  // print (totals, invoice numbers, dates) is readable without leaving the page.
+  // With zoom on, hovering a document magnifies it around the cursor.
+  function toggleZoom() {
+    const on = $('docs_panel').classList.toggle('zoom-on');
+    $('zoom_btn').classList.toggle('active', on);
+  }
+
   function initZoomFrames() {
-    document.querySelectorAll('#results_panel .doc-frame').forEach((frame) => {
+    document.querySelectorAll('.doc-frame').forEach((frame) => {
       const img = frame.querySelector('img');
-      if (!img) return;
       frame.addEventListener('mousemove', (e) => {
         const rect = frame.getBoundingClientRect();
-        const xPct = ((e.clientX - rect.left) / frame.clientWidth) * 100;
-        const yPct = ((e.clientY - rect.top + frame.scrollTop) / img.offsetHeight) * 100;
-        img.style.transformOrigin = `${xPct}% ${yPct}%`;
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        img.style.transformOrigin = `${x}% ${y}%`;
       });
       frame.addEventListener('mouseenter', () => img.classList.add('zoomed'));
       frame.addEventListener('mouseleave', () => img.classList.remove('zoomed'));
@@ -324,63 +266,15 @@
   }
 
   function toggleAdvanced() {
-    showAdvanced = !showAdvanced;
-    document.getElementById('advanced_attack').classList.toggle('hidden', !showAdvanced);
-    document.getElementById('advanced_label').textContent = showAdvanced ? 'Hide advanced' : 'Show advanced';
+    const panel = $('advanced_attack');
+    panel.classList.toggle('hidden');
+    $('advanced_label').textContent = panel.classList.contains('hidden') ? 'Advanced' : 'Hide advanced';
   }
 
-  function onQuestionPreset() {
-    const preset = document.getElementById('question_preset');
-    const value = preset.value;
-    if (value && value !== '__custom__') {
-      document.getElementById('question').value = value;
-      updateRunButton();
-    } else if (value === '__custom__') {
-      document.getElementById('question').focus();
-    }
-  }
-
-  // Epsilon lives on very different scales per norm (L2 is a global budget over every
-  // pixel/channel in the document; L∞ is a per-pixel bound on a 0–255 scale), so
-  // switching norms swaps in a sane default rather than leaving a stale, wrong-scale value.
-  const NORM_DEFAULTS = {
-    l2:   { eps: 30000, label: 'Epsilon (L2, global L2 budget)' },
-    linf: { eps: 16.0, label: 'Epsilon (L∞, pixel scale 0–255)' },
-  };
-
-  function onNormChange() {
-    const norm = document.getElementById('norm').value;
-    const defaults = NORM_DEFAULTS[norm];
-    document.getElementById('eps').value = defaults.eps;
-    document.getElementById('eps_label').textContent = defaults.label;
-  }
-
-  // ── Document preview (shown inline in the main panel as soon as a document is selected) ──
-
-  async function showDocPreview(docId) {
-    const panel = document.getElementById('doc_preview_panel');
-    const img = document.getElementById('doc_preview_img');
-    const loading = document.getElementById('doc_preview_loading');
-    const doc = documents.find(d => d.id === docId);
-
-    document.getElementById('doc_preview_title').textContent = doc ? doc.name : 'Selected document';
-    document.getElementById('empty_state').classList.add('hidden');
-    document.getElementById('results_panel').classList.add('hidden');
-    img.classList.add('hidden');
-    loading.classList.remove('hidden');
-    panel.classList.remove('hidden');
-
-    try {
-      const res = await fetch(`/api/docvqa/documents/${encodeURIComponent(docId)}/preview`);
-      if (!res.ok) throw new Error('Could not load preview');
-      const data = await res.json();
-      img.src = `data:image/png;base64,${data.image_b64}`;
-      img.classList.remove('hidden');
-      loading.classList.add('hidden');
-    } catch (err) {
-      loading.textContent = err.message;
-    }
-  }
+  // L2 is a global budget over the whole page, L∞ a per-pixel bound on 0–255,
+  // so switching norm resets ε to a value on the right scale.
+  const NORM_EPS = { l2: 30000, linf: 16 };
+  function onNormChange() { $('eps').value = NORM_EPS[$('norm').value]; }
 
   // ── Documents ─────────────────────────────────────────────────────────────
 
@@ -393,8 +287,6 @@
   async function uploadDocument(file) {
     const form = new FormData();
     form.append('file', file);
-    const gallery = document.getElementById('doc_gallery');
-    gallery.insertAdjacentHTML('afterbegin', '<div class="col-span-3 text-center py-2 text-xs text-gray-400">Uploading…</div>');
     try {
       const res = await fetch('/api/docvqa/upload', { method: 'POST', body: form });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
@@ -403,62 +295,59 @@
       selectDocument(doc.id);
     } catch (err) {
       showError(err.message);
-    } finally {
-      renderGallery();
     }
   }
 
   function renderGallery() {
-    const gallery = document.getElementById('doc_gallery');
-    if (!documents.length) {
-      gallery.innerHTML = '<div class="col-span-3 text-center py-4 text-xs text-gray-400">No documents yet</div>';
-      return;
-    }
+    const gallery = $('doc_gallery');
     gallery.innerHTML = '';
     for (const doc of documents) {
       const cell = document.createElement('div');
-      cell.className = 'thumb-wrap relative cursor-pointer rounded-lg border-2 border-transparent overflow-hidden bg-white hover:border-indigo-300 hover:shadow-sm';
-      if (doc.id === selectedDocId) {
-        cell.className = cell.className.replace('border-transparent', 'border-indigo-500 shadow-md');
-      }
-      cell.innerHTML = `
-        <img src="data:image/png;base64,${doc.thumb_b64}" class="w-full aspect-[4/5] object-cover block" title="${doc.name}" alt="${doc.name}">
-        <p class="text-center text-[10px] text-gray-500 py-0.5 leading-tight px-1 truncate">${doc.name}</p>
-      `;
+      cell.className = 'thumb cursor-pointer rounded-lg overflow-hidden bg-white' + (doc.id === selectedDocId ? ' selected' : '');
+      cell.title = doc.name;
+      cell.innerHTML = `<img src="data:image/png;base64,${doc.thumb_b64}" class="w-full aspect-[4/5] object-cover block" alt="">`;
       cell.addEventListener('click', () => selectDocument(doc.id));
       gallery.appendChild(cell);
     }
   }
 
-  function selectDocument(id) {
+  async function selectDocument(id) {
+    if (running) return;
     selectedDocId = id;
     renderGallery();
     updateRunButton();
-    showDocPreview(id);
-  }
 
-  function updateRunButton() {
-    const btn = document.getElementById('run_btn');
-    const hint = document.getElementById('run_hint');
-    const question = document.getElementById('question').value.trim();
-    const target = document.getElementById('target').value.trim();
-    if (selectedDocId && question && target) {
-      btn.disabled = false;
-      hint.textContent = 'Ready to run';
-    } else {
-      btn.disabled = true;
-      hint.textContent = 'Choose a document, question and target answer';
+    show('empty_state', false);
+    show('answers_panel', false);
+    show('adv_col', false);
+    show('docs_panel');
+    $('orig_img').src = '';
+    try {
+      const res = await fetch(`/api/docvqa/documents/${encodeURIComponent(id)}/preview`);
+      if (!res.ok) throw new Error('Could not load the document');
+      const data = await res.json();
+      if (selectedDocId === id) $('orig_img').src = `data:image/png;base64,${data.image_b64}`;
+    } catch (err) {
+      showError(err.message);
     }
   }
 
-  // ── Iteration slider ─────────────────────────────────────────────────────
+  function updateRunButton() {
+    $('run_btn').disabled = running || !(selectedDocId && $('question').value.trim() && $('target').value.trim());
+  }
+
+  // ── Results ───────────────────────────────────────────────────────────────
+
+  function setForgedAnswer(text, fooled) {
+    $('adv_pred').textContent = text;
+    $('adv_box').classList.toggle('ok', !!fooled);
+    $('adv_frame').classList.toggle('ok', !!fooled);
+  }
 
   function renderFrame(frame) {
-    document.getElementById('adv_img').src = `data:image/png;base64,${frame.image_b64}`;
-    document.getElementById('iteration_val').textContent = `${frame.iteration} / ${frame.total_iterations}`;
-    const iterPred = document.getElementById('iter_pred');
-    iterPred.textContent = frame.prediction;
-    iterPred.className = `text-lg font-bold ${frame.fooled ? 'text-emerald-600' : 'text-gray-800'}`;
+    $('adv_img').src = `data:image/png;base64,${frame.image_b64}`;
+    $('iteration_val').textContent = `step ${frame.iteration}`;
+    setForgedAnswer(frame.prediction, frame.fooled);
   }
 
   function onIterationSlider(value) {
@@ -466,54 +355,87 @@
     if (frame) renderFrame(frame);
   }
 
-  document.getElementById('iteration_slider').addEventListener('mousedown', () => { userDragged = true; });
+  // Saves original_receipt.png and forged_receipt.png, both at full resolution.
+  function downloadReceipts() {
+    if (!forgedId) return;
+    ['original', 'forged'].forEach((kind, i) => setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = `/api/docvqa/forged/${forgedId}/${kind}.png`;
+      a.download = `${kind}_receipt.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+    }, i * 300));
+  }
+
+  function onQuestionPreset() {
+    const value = $('question_preset').value;
+    const custom = value === '__custom__';
+    show('question', custom);
+    if (custom) {
+      $('question').value = '';
+      $('question').focus();
+    } else {
+      $('question').value = value;
+      $('target').value = $('question_preset').selectedOptions[0].dataset.target;
+    }
+    updateRunButton();
+  }
+
+  function setStatus(kind, text) {
+    const pill = $('status_pill');
+    pill.className = `pill pill-${kind}`;
+    pill.textContent = text;
+  }
+
+  function setProgress(fraction) {
+    if (fraction != null) $('progress_bar').style.width = Math.round(fraction * 100) + '%';
+  }
 
   function resetResults() {
-    // Clear any stale image/prediction state left over from a previous document or attack run,
-    // so nothing old lingers on screen while the new attack is computing.
     frames = [];
     userDragged = false;
-    document.getElementById('orig_img').src = '';
-    document.getElementById('orig_pred').textContent = '—';
-    document.getElementById('adv_img').src = '';
-    document.getElementById('adv_pred').textContent = '—';
-    document.getElementById('adv_status').textContent = '';
-    document.getElementById('adv_border').style.borderColor = '#e5e7eb';
-    document.getElementById('iteration_val').textContent = '-';
-    const iterPred = document.getElementById('iter_pred');
-    iterPred.textContent = '—';
-    iterPred.className = 'text-lg font-bold text-gray-800';
-    const iterationSlider = document.getElementById('iteration_slider');
-    iterationSlider.disabled = true;
-    iterationSlider.max = 0;
-    iterationSlider.value = 0;
+    $('question_echo').textContent = $('question').value.trim();
+    $('orig_pred').textContent = '…';
+    setForgedAnswer('…', false);
+    $('adv_img').src = '';
+    $('iteration_val').textContent = '';
+    const slider = $('iteration_slider');
+    slider.disabled = true; slider.max = 0; slider.value = 0;
+    setProgress(0);
+    show('progress_track');
+    show('adv_col', false);
+    show('download_btn', false);
+    forgedId = null;
+    setStatus('run', 'Loading model');
+  }
+
+  function finish() {
+    running = false;
+    updateRunButton();
+    show('progress_track', false);
+    if (activeEventSource) { activeEventSource.close(); activeEventSource = null; }
   }
 
   // ── Attack / streaming ────────────────────────────────────────────────────
 
   async function startAttack() {
     if (!selectedDocId) return;
-
     const params = {
       doc_id: selectedDocId,
-      question: document.getElementById('question').value.trim(),
-      target: document.getElementById('target').value.trim(),
-      mask: document.getElementById('mask').value,
-      perturbation_model: document.getElementById('norm').value,
-      steps: parseInt(document.getElementById('steps').value),
-      step_size: parseFloat(document.getElementById('step_size').value),
-      eps: parseFloat(document.getElementById('eps').value),
+      question: $('question').value.trim(),
+      target: $('target').value.trim(),
+      mask: $('mask').value,
+      perturbation_model: $('norm').value,
+      steps: parseInt($('steps').value),
+      step_size: parseFloat($('step_size').value),
+      eps: parseFloat($('eps').value),
     };
 
-    document.getElementById('run_btn').disabled = true;
-    document.getElementById('empty_state').classList.add('hidden');
-    document.getElementById('doc_preview_panel').classList.add('hidden');
-    document.getElementById('status_bar').classList.remove('hidden');
-    document.getElementById('error_bar').classList.add('hidden');
-    document.getElementById('results_panel').classList.add('hidden');
-    document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-indigo-500';
-    document.getElementById('progress_bar').style.width = '0%';
-    document.getElementById('computing_bar').classList.add('hidden');
+    running = true;
+    updateRunButton();
+    show('error_bar', false);
+    show('empty_state', false);
+    show('answers_panel');
+    show('docs_panel');
     resetResults();
 
     try {
@@ -530,75 +452,57 @@
       es.onmessage = (evt) => {
         const data = JSON.parse(evt.data);
         if (data.type === 'progress') {
-          setProgress(data.progress ?? null, data.message);
+          setProgress(data.progress ?? null);
         } else if (data.type === 'iteration') {
-          document.getElementById('results_panel').classList.remove('hidden');
           frames.push(data);
           frames.sort((a, b) => a.iteration - b.iteration);
-          const iterationSlider = document.getElementById('iteration_slider');
-          iterationSlider.max = frames.length - 1;
-          iterationSlider.disabled = false;
+          const slider = $('iteration_slider');
+          slider.max = frames.length - 1;
+          slider.disabled = false;
+          show('adv_col');
           if (!userDragged) {
-            iterationSlider.value = frames.length - 1;
+            slider.value = frames.length - 1;
             renderFrame(frames[frames.length - 1]);
           }
-          setProgress(data.progress ?? null, `Attack iteration ${data.iteration}/${data.total_iterations} — model says "${data.prediction}"`);
+          setProgress(data.progress ?? null);
         } else if (data.type === 'image') {
-          document.getElementById('results_panel').classList.remove('hidden');
           if (data.clean) {
-            document.getElementById('orig_img').src = `data:image/png;base64,${data.image_b64}`;
-            document.getElementById('orig_pred').textContent = data.prediction;
-            document.getElementById('computing_bar').classList.remove('hidden');
+            $('orig_img').src = `data:image/png;base64,${data.image_b64}`;
+            $('orig_pred').textContent = data.prediction;
+            setStatus('run', 'Attacking');
           } else {
-            document.getElementById('adv_img').src = `data:image/png;base64,${data.image_b64}`;
-            document.getElementById('adv_pred').textContent = data.prediction;
-            document.getElementById('adv_border').style.borderColor = data.fooled ? '#10b981' : '#ef4444';
-            const status = document.getElementById('adv_status');
-            status.textContent = data.fooled
-              ? `✓ Forgery succeeded — model answered the target "${data.target}"`
-              : `✗ Forgery did not fully match target "${data.target}"`;
-            status.className = `mt-1.5 text-xs font-medium ${data.fooled ? 'text-emerald-600' : 'text-red-500'}`;
-            document.getElementById('computing_bar').classList.add('hidden');
+            show('adv_col');
+            if (!frames.length) $('adv_img').src = `data:image/png;base64,${data.image_b64}`;
+            if (!userDragged) {
+              if (frames.length) $('iteration_slider').value = frames.length - 1;
+              setForgedAnswer(data.prediction, data.fooled);
+            }
+            setStatus(data.fooled ? 'ok' : 'bad', data.fooled ? 'Model fooled' : 'Not fooled');
+            if (data.forged_id) {
+              forgedId = data.forged_id;
+              show('download_btn');
+            }
           }
         } else if (data.type === 'done') {
-          setProgress(1, 'Attack complete');
-          document.getElementById('progress_bar').className = 'h-1.5 rounded-full transition-all duration-300 bg-emerald-500';
-          document.getElementById('run_btn').disabled = false;
-          document.getElementById('computing_bar').classList.add('hidden');
-          es.close(); activeEventSource = null;
+          finish();
         } else if (data.type === 'error') {
-          showError(data.message + (data.traceback ? '\n\n' + data.traceback : ''));
-          document.getElementById('run_btn').disabled = false;
-          document.getElementById('computing_bar').classList.add('hidden');
-          es.close(); activeEventSource = null;
+          showError(data.message, data.traceback);
+          finish();
         }
       };
-      es.onerror = () => {
-        showError('Lost connection to server.');
-        document.getElementById('run_btn').disabled = false;
-        es.close(); activeEventSource = null;
-      };
+      es.onerror = () => { showError('Lost connection to the server.'); finish(); };
     } catch (err) {
       showError(err.message);
-      document.getElementById('run_btn').disabled = false;
+      finish();
     }
   }
 
-  // ── Utilities ─────────────────────────────────────────────────────────────
-
-  function setProgress(fraction, message) {
-    if (message) document.getElementById('status_msg').textContent = message;
-    if (fraction != null) {
-      const pct = Math.round(fraction * 100);
-      document.getElementById('progress_bar').style.width = pct + '%';
-      document.getElementById('status_pct').textContent = pct + '%';
-    }
-  }
-
-  function showError(msg) {
-    document.getElementById('status_bar').classList.add('hidden');
-    document.getElementById('error_bar').classList.remove('hidden');
-    document.getElementById('error_msg').textContent = msg;
+  function showError(msg, trace) {
+    $('error_msg').textContent = msg;
+    $('error_trace').textContent = trace || '';
+    show('error_details', !!trace);
+    show('error_bar');
+    if (running) setStatus('bad', 'Error');
   }
 
   init();
