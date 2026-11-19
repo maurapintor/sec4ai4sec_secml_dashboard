@@ -20,6 +20,7 @@ from evaluator import (
 )
 from docvqa_runner import (
     add_uploaded_document,
+    answer_question,
     get_document_preview,
     get_forged_png,
     list_documents,
@@ -89,6 +90,11 @@ class VisualizeParams(BaseModel):
         return v
 
 
+class AskParams(BaseModel):
+    doc_id: str
+    question: str
+
+
 class DocVQAParams(BaseModel):
     doc_id: str
     question: str
@@ -96,7 +102,7 @@ class DocVQAParams(BaseModel):
     mask: str = "dominant_channel"
     perturbation_model: str = "l2"
     eps: float = 30000.0
-    steps: int = 20
+    steps: int = 50
     step_size: float = 10.0
 
     @field_validator("question", "target")
@@ -231,6 +237,18 @@ async def docvqa_forged_png(forged_id: str, kind: str) -> Response:
         media_type="image/png",
         headers={"Content-Disposition": f'attachment; filename="{kind}_receipt.png"'},
     )
+
+
+@app.post("/api/docvqa/ask")
+def docvqa_ask(params: AskParams) -> Dict[str, str]:
+    # Plain `def`: FastAPI runs it in a worker thread, so the model call doesn't block the event loop.
+    question = params.question.strip()
+    if not question:
+        raise HTTPException(400, "Question is empty")
+    try:
+        return {"answer": answer_question(params.doc_id, question)}
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.post("/api/docvqa/upload")

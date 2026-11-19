@@ -42,6 +42,7 @@ THUMB_SIZE = (140, 180)
 # ── Lazy model singleton (the ~1.1GB Pix2Struct-DocVQA checkpoint is downloaded once) ──
 
 _model_lock = threading.Lock()
+_predict_lock = threading.Lock()
 _model: Pix2StructModel | None = None
 
 
@@ -188,6 +189,13 @@ def get_document_image(doc_id: str) -> Image.Image:
     if doc_id not in _documents:
         raise ValueError(f"Unknown document: {doc_id!r}")
     return _documents[doc_id]["image"]
+
+
+def answer_question(doc_id: str, question: str) -> str:
+    """The model's answer to `question` on the clean document."""
+    image = get_document_image(doc_id)
+    with _predict_lock:
+        return _get_model().torch_predict(image, [question])[0]
 
 
 def get_document_preview(doc_id: str) -> dict:

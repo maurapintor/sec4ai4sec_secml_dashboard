@@ -22,130 +22,93 @@
       padding: 0.5rem 0.7rem; font-size: 0.9rem; color: #111827; outline: none; transition: border-color 0.15s;
     }
     .input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
+    .input:disabled { background-color: #f9fafb; color: #6b7280; }
+    /* Flat selects with our own chevron: Safari otherwise draws its native glossy control. */
+    select.input, .input-group > select {
+      -webkit-appearance: none; appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%237a8499' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 1.1rem;
+      padding-right: 2.1rem;
+    }
+    .input-group > select { background-position: right 0 center; padding-right: 1.4rem; }
+    #question_preset, #question { height: 2.5rem; font-size: 1rem; font-weight: 500; }
+    .input-group { display: flex; align-items: center; gap: 0.5rem; padding-top: 0; padding-bottom: 0; height: 2.5rem; }
+    .input-group:focus-within { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(32,80,200,0.12); }
+    .input-group > span { font-size: 0.72rem; font-weight: 500; color: var(--muted); white-space: nowrap; }
+    .input-group > input, .input-group > select { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background-color: transparent; font-size: 0.9rem; color: #111827; }
     .thumb { border: 2px solid transparent; transition: border-color 0.12s, box-shadow 0.12s; }
     .thumb:hover { border-color: #e2c6ee; }
     .thumb.selected { border-color: var(--brand-pink); box-shadow: 0 2px 10px rgba(197,46,120,0.18); }
     .dropzone { border: 1.5px dashed #d7dbe4; border-radius: 8px; transition: border-color 0.15s, background 0.15s; }
     .dropzone:hover, .dropzone.dragover { border-color: var(--brand-blue); background: var(--brand-soft); }
-    .run-btn { background: var(--brand-blue); }
-    .run-btn:hover:not(:disabled) { background: #173d9c; }
-    .run-btn:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; font-weight: 600; font-size: 0.9rem; border-radius: 8px; height: 2.5rem; padding: 0 1.1rem; color: #fff; white-space: nowrap; transition: background 0.15s; }
+    .btn-blue { background: var(--brand-blue); }
+    .btn-blue:hover:not(:disabled) { background: #173d9c; }
+    .btn-pink { background: var(--brand-pink); }
+    .btn-pink:hover:not(:disabled) { background: #a5235f; }
+    .btn:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+    .btn-cta { font-size: 1.15rem; height: auto; padding: 0.9rem 2.4rem; border-radius: 12px; box-shadow: 0 6px 20px rgba(197,46,120,0.25); }
 
     .doc-frame { flex: 1; min-height: 0; overflow: hidden; background: #fafafb; border: 2px solid var(--line); border-radius: 10px; transition: border-color 0.3s; }
     .doc-frame img { display: block; width: 100%; height: 100%; object-fit: contain; transition: transform 0.08s linear; }
+    .doc-frame img.hidden { display: none; }
     .zoom-on .doc-frame img { cursor: zoom-in; }
     .zoom-on .doc-frame img.zoomed { transform: scale(2.5); }
+    .doc-frame.ok { border-color: var(--ok); }
     .tool-btn { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); background: #fff; }
     .tool-btn:hover { color: #111827; }
     .tool-btn.active { color: var(--brand-violet); background: var(--brand-soft); border-color: #e2c6ee; }
-    .doc-frame.ok { border-color: var(--ok); }
 
-    .answer { font-size: 2rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; word-break: break-word; }
-    .answer-box { border-radius: 12px; padding: 1rem 1.25rem; background: #f6f7fb; transition: background 0.3s; }
+    .answer-box { border-radius: 12px; padding: 0.8rem 1.1rem; background: #f6f7fb; transition: background 0.3s; min-height: 5.25rem; }
+    .answer { font-size: 1.85rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; word-break: break-word; color: #1f2937; }
+    .answer.empty { color: #c4c9d4; }
     .answer-box.ok { background: var(--ok-soft); }
     .answer-box.ok .answer { color: var(--ok); }
-    .pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; }
+    .pill { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.6rem; border-radius: 999px; }
     .pill-ok { background: var(--ok); color: #fff; }
     .pill-bad { background: #fde8e8; color: var(--bad); }
     .pill-run { background: var(--brand-soft); color: var(--brand-violet); }
+
+    .popover { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 300px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(45,54,85,0.12); padding: 0.9rem; }
 
     input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #e5e7eb; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
     input[type=range]:disabled::-webkit-slider-thumb { background: #d1d5db; }
 
-    @media (max-width: 900px) {
+    .fade-in { animation: fade-in 0.25s ease-out; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 1000px) {
       .layout { flex-direction: column; overflow: auto; }
       .layout aside { width: 100% !important; }
       .compare { grid-template-columns: 1fr !important; }
-      .answer { font-size: 1.5rem; }
     }
         </style>
     </head>
     <body class="h-screen flex overflow-hidden">
-
         <div class="layout flex flex-1 overflow-hidden">
-            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:300px">
+            <aside class="bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0" style="width:260px">
                 <div class="brand-lockup px-5 pt-4 pb-3 shrink-0">
                     <img src="/static/project-logo.png" alt="SEC4AI4SEC" class="h-11 w-11 object-contain">
                     <img src="/static/EN-Funded by the EU-PANTONE.jpg" alt="Funded by the European Union" class="h-11 flex-1 min-w-0 object-contain object-left">
                 </div>
-                <div class="p-5 space-y-6 flex-1">
-                    <div>
-                        <p class="section-label">Document</p>
-                        <div id="doc_gallery" class="grid grid-cols-3 gap-1.5">
-                            <div class="col-span-3 text-center py-4 text-xs text-gray-400">Loading…</div>
-                        </div>
-                        <label id="dropzone" class="dropzone mt-2 flex items-center justify-center gap-2 py-2.5 cursor-pointer">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
-                            </svg>
-                            <span class="text-xs text-gray-500">Upload your own</span>
-                            <input id="file_input" type="file" accept="image/*" class="hidden">
-                        </label>
+                <div class="p-5 flex-1">
+                    <p class="section-label">Document</p>
+                    <div id="doc_gallery" class="grid grid-cols-3 gap-1.5">
+                        <div class="col-span-3 text-center py-4 text-xs text-gray-400">Loading…</div>
                     </div>
-
-                    <div class="space-y-3">
-                        <p class="section-label">Attack</p>
-                        <div class="field">
-                            <label for="question_preset">Question</label>
-                            <select id="question_preset" class="input" onchange="onQuestionPreset()">
-                                <option value="How much is the total?" data-target="$0.00" selected>How much is the total?</option>
-                                <option value="What is the date?" data-target="01/01/2000">What is the date?</option>
-                                <option value="__custom__">Other…</option>
-                            </select>
-                            <input id="question" type="text" class="input mt-2 hidden" value="How much is the total?" placeholder="Type a question">
-                        </div>
-                        <div class="field">
-                            <label for="target">Target answer</label>
-                            <input id="target" type="text" class="input" value="$0.00">
-                        </div>
-                        <div class="field">
-                            <label for="mask">Perturbation mask</label>
-                            <select id="mask" class="input">
-                                <option value="dominant_channel" selected>Least visible</option>
-                                <option value="dark_pixels">Text only</option>
-                                <option value="white_pixels">Background only</option>
-                                <option value="bottom_right_corner">Bottom-right corner</option>
-                                <option value="include_all">Whole page</option>
-                            </select>
-                        </div>
-                        <button type="button" onclick="toggleAdvanced()" class="text-xs font-medium text-gray-400 hover:text-gray-600">
-                            <span id="advanced_label">Advanced</span>
-                        </button>
-                        <div id="advanced_attack" class="hidden space-y-3">
-                            <div class="field">
-                                <label for="norm">Norm</label>
-                                <select id="norm" class="input" onchange="onNormChange()">
-                                    <option value="l2" selected>L2</option>
-                                    <option value="linf">L∞</option>
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="field">
-                                    <label for="steps">Steps</label>
-                                    <input id="steps" type="number" class="input" value="20" min="1" max="200">
-                                </div>
-                                <div class="field">
-                                    <label for="step_size">Step size</label>
-                                    <input id="step_size" type="number" class="input" value="10.0" min="0.01" step="0.1">
-                                </div>
-                                <div class="field">
-                                    <label for="eps">ε</label>
-                                    <input id="eps" type="number" class="input" value="30000" min="0.1" step="1">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-4 border-t border-gray-100 shrink-0">
-                    <button id="run_btn" onclick="startAttack()" disabled
-                        class="run-btn w-full text-white font-semibold py-3 rounded-lg transition-colors">
-                        Run attack
-                    </button>
+                    <label id="dropzone" class="dropzone mt-2 flex items-center justify-center gap-2 py-2.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                        </svg>
+                        <span class="text-xs text-gray-500">Upload your own</span>
+                        <input id="file_input" type="file" accept="image/*" class="hidden">
+                    </label>
                 </div>
             </aside>
 
-            <main class="flex-1 min-h-0 overflow-hidden p-6 flex flex-col gap-4">
+            <main class="flex-1 min-h-0 overflow-hidden p-5 flex flex-col gap-3">
                 <div id="error_bar" class="hidden border border-red-200 bg-red-50 rounded-lg px-4 py-3">
                     <p id="error_msg" class="text-sm text-red-700"></p>
                     <details id="error_details" class="hidden mt-1">
@@ -154,59 +117,110 @@
                     </details>
                 </div>
 
-                <div id="empty_state" class="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                    Pick a document to start
-                </div>
+                <div id="compare" class="compare grid gap-5 flex-1 min-h-0" style="grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);">
 
-                <!-- Question + answers -->
-                <div id="answers_panel" class="hidden card p-5">
-                    <div class="flex items-center justify-between gap-3 mb-4">
-                        <p class="text-lg font-semibold text-gray-800">“<span id="question_echo"></span>”</p>
-                        <span id="status_pill" class="pill pill-run hidden"></span>
-                    </div>
-                    <div class="compare grid gap-4" style="grid-template-columns: 1fr 1fr;">
+                    <!-- Original: question, document, answer -->
+                    <section class="card p-4 flex flex-col gap-3 min-h-0">
+                        <div class="flex items-center gap-2 h-10">
+                            <select id="question_preset" class="input flex-1 min-w-0" onchange="onQuestionPreset()">
+                                <option value="How much is the total?" data-target="$0.00" selected>How much is the total?</option>
+                                <option value="What is the date?" data-target="01/01/2000">What is the date?</option>
+                                <option value="__custom__">Other…</option>
+                            </select>
+                            <input id="question" type="text" class="input flex-1 min-w-0 hidden" value="How much is the total?" placeholder="Type a question">
+                            <button id="ask_btn" class="btn btn-blue" onclick="ask()">Ask</button>
+                        </div>
+                        <div class="flex items-center justify-between h-7">
+                            <p class="text-xs font-medium text-gray-500">Original</p>
+                            <button id="zoom_btn" type="button" class="tool-btn" onclick="toggleZoom()">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5M11 8v6M8 11h6"/></svg>
+                                Zoom
+                            </button>
+                        </div>
+                        <div class="doc-frame">
+                            <img id="orig_img" alt="original document">
+                        </div>
                         <div class="answer-box">
-                            <p class="text-xs font-medium text-gray-500 mb-1">Original document</p>
-                            <p id="orig_pred" class="answer text-gray-800">…</p>
+                            <p class="text-xs font-medium text-gray-500 mb-1">Answer</p>
+                            <p id="orig_pred" class="answer empty">—</p>
                         </div>
-                        <div id="adv_box" class="answer-box">
-                            <p class="text-xs font-medium text-gray-500 mb-1">Forged document</p>
-                            <p id="adv_pred" class="answer text-gray-800">…</p>
-                        </div>
-                    </div>
-                    <div id="progress_track" class="hidden mt-4 w-full bg-gray-100 rounded-full h-1">
-                        <div id="progress_bar" class="h-1 rounded-full transition-all duration-300" style="width:0%; background: var(--brand-blue);"></div>
-                    </div>
-                </div>
+                    </section>
 
-                <!-- Documents -->
-                <div id="docs_panel" class="hidden card p-5 flex-1 min-h-0 flex flex-col">
-                    <div class="compare grid gap-6 flex-1 min-h-0" style="grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr);">
-                        <div class="flex flex-col min-h-0">
-                            <div class="flex items-center justify-between mb-2 h-7">
-                                <p class="text-xs font-medium text-gray-500">Original</p>
-                                <button id="zoom_btn" type="button" class="tool-btn" onclick="toggleZoom()">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5M11 8v6M8 11h6"/></svg>
-                                    Zoom
-                                </button>
-                            </div>
-                            <div class="doc-frame">
-                                <img id="orig_img" alt="original document">
-                            </div>
+                    <!-- Forged: attack button, then target form, document, answer -->
+                    <section class="card p-4 flex flex-col gap-3 min-h-0">
+                        <div id="attack_cta" class="flex-1 flex items-center justify-center">
+                            <button id="attack_cta_btn" class="btn btn-pink btn-cta" onclick="revealAttack()">Attack</button>
                         </div>
-                        <div id="adv_col" class="hidden flex flex-col min-h-0">
-                            <div class="flex items-center gap-3 mb-2 h-7">
+
+                        <div id="attack_panel" class="hidden flex-1 min-h-0 flex flex-col gap-3 fade-in">
+                            <div class="relative flex items-center gap-2 h-10">
+                                <label class="input input-group flex-1 min-w-0">
+                                    <span>Target answer</span>
+                                    <input id="target" type="text">
+                                </label>
+                                <label class="input input-group shrink-0" style="width: 12rem;">
+                                    <span>Mask</span>
+                                    <select id="mask">
+                                    <option value="dominant_channel" selected>Text, same color</option>
+                                    <option value="dark_pixels">Text only</option>
+                                    <option value="white_pixels">Background only</option>
+                                    <option value="bottom_right_corner">Bottom-right corner</option>
+                                    <option value="include_all">Whole page</option>
+                                    </select>
+                                </label>
+                                <button type="button" class="tool-btn h-10" title="Advanced" onclick="toggleAdvanced()">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                                </button>
+                                <button id="run_btn" class="btn btn-pink" onclick="startAttack()">Run attack</button>
+
+                                <div id="advanced_attack" class="popover hidden">
+                                    <div class="space-y-3">
+                                        <div class="field">
+                                            <label for="norm">Norm</label>
+                                            <select id="norm" class="input" onchange="onNormChange()">
+                                                <option value="l2" selected>L2</option>
+                                                <option value="linf">L∞</option>
+                                            </select>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div class="field">
+                                                <label for="steps">Steps</label>
+                                                <input id="steps" type="number" class="input" value="50" min="1" max="200">
+                                            </div>
+                                            <div class="field">
+                                                <label for="step_size">Step size</label>
+                                                <input id="step_size" type="number" class="input" value="10.0" min="0.01" step="0.1">
+                                            </div>
+                                            <div class="field">
+                                                <label for="eps">ε</label>
+                                                <input id="eps" type="number" class="input" value="30000" min="0.1" step="1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 h-7">
                                 <p class="text-xs font-medium text-gray-500">Forged</p>
                                 <input id="iteration_slider" type="range" min="0" max="0" value="0"
-                                    class="flex-1 disabled:opacity-50" oninput="onIterationSlider(this.value)" disabled>
+                                    class="flex-1 disabled:opacity-40" oninput="onIterationSlider(this.value)" disabled>
                                 <span id="iteration_val" class="text-xs font-mono text-gray-400 w-14 text-right"></span>
                                 <button id="download_btn" type="button" class="hidden text-xs font-medium text-white rounded-md px-2.5 py-1" style="background: var(--brand-blue);" onclick="downloadReceipts()">Download receipt</button>
                             </div>
                             <div id="adv_frame" class="doc-frame">
-                                <img id="adv_img" alt="forged document">
+                                <img id="adv_img" class="hidden" alt="forged document">
+                            </div>
+                            <div id="adv_box" class="answer-box relative">
+                                <div class="flex items-center justify-between mb-1">
+                                    <p class="text-xs font-medium text-gray-500">Answer</p>
+                                    <span id="status_pill" class="pill hidden"></span>
+                                </div>
+                                <p id="adv_pred" class="answer empty">—</p>
+                                <div id="progress_track" class="hidden absolute left-3 right-3 bottom-1.5 bg-gray-200/70 rounded-full h-1">
+                                    <div id="progress_bar" class="h-1 rounded-full transition-all duration-300" style="width:0%; background: var(--brand-pink);"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
             </main>
         </div>
@@ -218,6 +232,7 @@
   let frames = [];
   let userDragged = false;
   let running = false;
+  let asking = false;
   let forgedId = null;
 
   const $ = (id) => document.getElementById(id);
@@ -225,8 +240,10 @@
 
   async function init() {
     await loadDocuments();
-    $('question').addEventListener('input', updateRunButton);
-    $('target').addEventListener('input', updateRunButton);
+    $('question').addEventListener('input', onQuestionChanged);
+    $('target').addEventListener('input', updateButtons);
+    $('question').addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); });
+    $('target').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('run_btn').disabled) startAttack(); });
 
     const dropzone = $('dropzone');
     const fileInput = $('file_input');
@@ -240,6 +257,12 @@
       if (file) uploadDocument(file);
     });
 
+    // Close the advanced popover when clicking anywhere else.
+    document.addEventListener('click', (e) => {
+      const pop = $('advanced_attack');
+      if (!pop.classList.contains('hidden') && !pop.parentElement.contains(e.target)) pop.classList.add('hidden');
+    });
+
     $('iteration_slider').addEventListener('mousedown', () => { userDragged = true; });
     initZoomFrames();
     if (documents.length) selectDocument(documents[0].id);
@@ -247,7 +270,7 @@
 
   // With zoom on, hovering a document magnifies it around the cursor.
   function toggleZoom() {
-    const on = $('docs_panel').classList.toggle('zoom-on');
+    const on = $('compare').classList.toggle('zoom-on');
     $('zoom_btn').classList.toggle('active', on);
   }
 
@@ -265,11 +288,7 @@
     });
   }
 
-  function toggleAdvanced() {
-    const panel = $('advanced_attack');
-    panel.classList.toggle('hidden');
-    $('advanced_label').textContent = panel.classList.contains('hidden') ? 'Advanced' : 'Hide advanced';
-  }
+  function toggleAdvanced() { $('advanced_attack').classList.toggle('hidden'); }
 
   // L2 is a global budget over the whole page, L∞ a per-pixel bound on 0–255,
   // so switching norm resets ε to a value on the right scale.
@@ -312,16 +331,14 @@
   }
 
   async function selectDocument(id) {
-    if (running) return;
+    if (running || asking) return;
     selectedDocId = id;
     renderGallery();
-    updateRunButton();
-
-    show('empty_state', false);
-    show('answers_panel', false);
-    show('adv_col', false);
-    show('docs_panel');
+    show('error_bar', false);
+    setOriginalAnswer(null);
+    closeAttack();
     $('orig_img').src = '';
+    updateButtons();
     try {
       const res = await fetch(`/api/docvqa/documents/${encodeURIComponent(id)}/preview`);
       if (!res.ok) throw new Error('Could not load the document');
@@ -332,20 +349,115 @@
     }
   }
 
-  function updateRunButton() {
-    $('run_btn').disabled = running || !(selectedDocId && $('question').value.trim() && $('target').value.trim());
+  // ── Question ──────────────────────────────────────────────────────────────
+
+  const question = () => $('question').value.trim();
+  const presetTarget = () => $('question_preset').selectedOptions[0].dataset.target || '';
+
+  function onQuestionPreset() {
+    const value = $('question_preset').value;
+    const custom = value === '__custom__';
+    show('question', custom);
+    $('question_preset').style.flex = custom ? '0 0 8rem' : '';
+    if (custom) {
+      $('question').value = '';
+      $('question').focus();
+    } else {
+      $('question').value = value;
+      $('target').value = presetTarget();
+    }
+    onQuestionChanged();
+  }
+
+  // A different question invalidates both answers.
+  function onQuestionChanged() {
+    if (running) return;
+    setOriginalAnswer(null);
+    resetForged();
+    updateButtons();
+  }
+
+  function setOriginalAnswer(text) {
+    $('orig_pred').textContent = text ?? '—';
+    $('orig_pred').classList.toggle('empty', text == null);
+  }
+
+  async function ask() {
+    if (!selectedDocId || !question() || asking || running) return;
+    asking = true;
+    updateButtons();
+    show('error_bar', false);
+    setOriginalAnswer('…');
+    try {
+      const res = await fetch('/api/docvqa/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doc_id: selectedDocId, question: question() }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || JSON.stringify(e)); }
+      setOriginalAnswer((await res.json()).answer);
+    } catch (err) {
+      setOriginalAnswer(null);
+      showError(err.message);
+    } finally {
+      asking = false;
+      updateButtons();
+    }
+  }
+
+  // ── Attack panel ──────────────────────────────────────────────────────────
+
+  function revealAttack() {
+    show('attack_cta', false);
+    show('attack_panel');
+    if (!$('target').value.trim()) $('target').value = presetTarget();
+    $('target').focus();
+    $('target').select();
+    updateButtons();
+  }
+
+  function closeAttack() {
+    resetForged();
+    show('attack_panel', false);
+    show('attack_cta');
+    $('advanced_attack').classList.add('hidden');
+  }
+
+  function resetForged() {
+    frames = [];
+    userDragged = false;
+    forgedId = null;
+    $('adv_img').src = '';
+    show('adv_img', false);
+    setForgedAnswer(null, false);
+    $('iteration_val').textContent = '';
+    const slider = $('iteration_slider');
+    slider.disabled = true; slider.max = 0; slider.value = 0;
+    show('download_btn', false);
+    show('status_pill', false);
+    show('progress_track', false);
+  }
+
+  function updateButtons() {
+    const busy = running || asking;
+    $('ask_btn').disabled = busy || !selectedDocId || !question();
+    $('run_btn').disabled = busy || !selectedDocId || !question() || !$('target').value.trim();
+    $('attack_cta_btn').disabled = !selectedDocId;
+    ['question_preset', 'question', 'target', 'mask', 'norm', 'steps', 'step_size', 'eps']
+      .forEach(id => { $(id).disabled = running; });
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
 
   function setForgedAnswer(text, fooled) {
-    $('adv_pred').textContent = text;
+    $('adv_pred').textContent = text ?? '—';
+    $('adv_pred').classList.toggle('empty', text == null);
     $('adv_box').classList.toggle('ok', !!fooled);
     $('adv_frame').classList.toggle('ok', !!fooled);
   }
 
   function renderFrame(frame) {
     $('adv_img').src = `data:image/png;base64,${frame.image_b64}`;
+    show('adv_img');
     $('iteration_val').textContent = `step ${frame.iteration}`;
     setForgedAnswer(frame.prediction, frame.fooled);
   }
@@ -366,20 +478,6 @@
     }, i * 300));
   }
 
-  function onQuestionPreset() {
-    const value = $('question_preset').value;
-    const custom = value === '__custom__';
-    show('question', custom);
-    if (custom) {
-      $('question').value = '';
-      $('question').focus();
-    } else {
-      $('question').value = value;
-      $('target').value = $('question_preset').selectedOptions[0].dataset.target;
-    }
-    updateRunButton();
-  }
-
   function setStatus(kind, text) {
     const pill = $('status_pill');
     pill.className = `pill pill-${kind}`;
@@ -390,27 +488,9 @@
     if (fraction != null) $('progress_bar').style.width = Math.round(fraction * 100) + '%';
   }
 
-  function resetResults() {
-    frames = [];
-    userDragged = false;
-    $('question_echo').textContent = $('question').value.trim();
-    $('orig_pred').textContent = '…';
-    setForgedAnswer('…', false);
-    $('adv_img').src = '';
-    $('iteration_val').textContent = '';
-    const slider = $('iteration_slider');
-    slider.disabled = true; slider.max = 0; slider.value = 0;
-    setProgress(0);
-    show('progress_track');
-    show('adv_col', false);
-    show('download_btn', false);
-    forgedId = null;
-    setStatus('run', 'Loading model');
-  }
-
   function finish() {
     running = false;
-    updateRunButton();
+    updateButtons();
     show('progress_track', false);
     if (activeEventSource) { activeEventSource.close(); activeEventSource = null; }
   }
@@ -418,10 +498,10 @@
   // ── Attack / streaming ────────────────────────────────────────────────────
 
   async function startAttack() {
-    if (!selectedDocId) return;
+    if (!selectedDocId || running) return;
     const params = {
       doc_id: selectedDocId,
-      question: $('question').value.trim(),
+      question: question(),
       target: $('target').value.trim(),
       mask: $('mask').value,
       perturbation_model: $('norm').value,
@@ -430,13 +510,15 @@
       eps: parseFloat($('eps').value),
     };
 
+    resetForged();
     running = true;
-    updateRunButton();
+    updateButtons();
     show('error_bar', false);
-    show('empty_state', false);
-    show('answers_panel');
-    show('docs_panel');
-    resetResults();
+    $('advanced_attack').classList.add('hidden');
+    setStatus('run', 'Loading model');
+    setForgedAnswer('…', false);
+    setProgress(0);
+    show('progress_track');
 
     try {
       const res = await fetch('/api/docvqa/attack', {
@@ -459,7 +541,6 @@
           const slider = $('iteration_slider');
           slider.max = frames.length - 1;
           slider.disabled = false;
-          show('adv_col');
           if (!userDragged) {
             slider.value = frames.length - 1;
             renderFrame(frames[frames.length - 1]);
@@ -467,12 +548,10 @@
           setProgress(data.progress ?? null);
         } else if (data.type === 'image') {
           if (data.clean) {
-            $('orig_img').src = `data:image/png;base64,${data.image_b64}`;
-            $('orig_pred').textContent = data.prediction;
+            setOriginalAnswer(data.prediction);
             setStatus('run', 'Attacking');
           } else {
-            show('adv_col');
-            if (!frames.length) $('adv_img').src = `data:image/png;base64,${data.image_b64}`;
+            if (!frames.length) { $('adv_img').src = `data:image/png;base64,${data.image_b64}`; show('adv_img'); }
             if (!userDragged) {
               if (frames.length) $('iteration_slider').value = frames.length - 1;
               setForgedAnswer(data.prediction, data.fooled);
