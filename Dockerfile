@@ -11,21 +11,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# torch/torchvision are pinned to a cu121 build rather than pulled in via
-# requirements.txt, because the default (unpinned) PyPI wheel now targets a much
-# newer CUDA runtime than older workstation drivers support — it installs fine but
-# torch.cuda.is_available() silently comes back False ("CUDA initialization: the
-# NVIDIA driver on your system is too old"). cu121 wheels work with any driver
-# >= 530.x (CUDA 12.1 forward-compatible); if your workstation's driver is even
-# older, pick an earlier torch/cu11x pair from https://download.pytorch.org/whl/.
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 \
-        --index-url https://download.pytorch.org/whl/cu121
+# torch/torchvision come from the CUDA 12.6 index rather than plain PyPI, whose
+# default wheel targets the newest CUDA runtime and can silently fall back to CPU
+# on hosts with older drivers. CUDA 12.x wheels run on any driver >= 525.
+# torch >= 2.6 is required by recent transformers releases.
+# Not supported: Blackwell GPUs (RTX 50xx, B200), which need a cu128 build.
+#
+# /constraints.txt keeps these versions fixed when requirements.txt is installed,
+# and pins transformers to the version the dashboard was tested with.
+RUN printf "torch==2.7.1\ntorchvision==0.22.1\ntransformers==4.57.6\n" > /constraints.txt \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -c /constraints.txt torch torchvision \
+        --index-url https://download.pytorch.org/whl/cu126
 
 # Installed in its own layer so `docker build` only re-downloads/re-installs
 # dependencies when requirements.txt actually changes, not on every code edit.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -c /constraints.txt -r requirements.txt
 
 # Bake the Pix2Struct-DocVQA checkpoint (~1.1GB) and the font used to render the
 # question header into the image, so a fresh container (e.g. a RunPod pod) can run
