@@ -2,6 +2,7 @@
 (models/processing/pix2struct_processor.py), Donut-specific parts dropped.
 """
 
+import functools
 import math
 import textwrap
 from typing import Optional, Union
@@ -28,6 +29,20 @@ def torch_extract_patches(image_tensor, patch_height, patch_width):
     return patches.unsqueeze(0)
 
 
+@functools.lru_cache(maxsize=1)
+def _default_font_path() -> str:
+    # hf_hub_download checks the Hub for updates on every call; resolve the path once.
+    return hf_hub_download(DEFAULT_FONT_PATH, "Arial.TTF")
+
+
+@functools.lru_cache(maxsize=32)
+def _header_tensor(header: str) -> torch.Tensor:
+    """Rendered question header as a (C, H, W) float tensor. The header doesn't
+    depend on the image, so it's rendered once per question instead of every step."""
+    header_image = render_text(header)
+    return torch.from_numpy(np.array(header_image)).float().permute(2, 0, 1)
+
+
 def render_text(
     text: str,
     text_size: int = 36,
@@ -50,7 +65,7 @@ def render_text(
     elif font_path is not None:
         font = font_path
     else:
-        font = hf_hub_download(DEFAULT_FONT_PATH, "Arial.TTF")
+        font = _default_font_path()
     font = ImageFont.truetype(font, encoding="UTF-8", size=text_size)
 
     temp_draw = ImageDraw.Draw(Image.new("RGB", (1, 1), background_color))
@@ -82,8 +97,12 @@ class Pix2StructImageProcessor:
         image_tensor = image_tensor.permute(2, 0, 1)
         _, h, w = image_tensor.shape
 
-        header_image = render_text(header, **kwargs)
-        header_tensor = torch.from_numpy(np.array(header_image)).float().permute(2, 0, 1)
+        if kwargs:
+            header_image = render_text(header, **kwargs)
+            header_tensor = torch.from_numpy(np.array(header_image)).float().permute(2, 0, 1)
+        else:
+            header_tensor = _header_tensor(header)
+        header_tensor = header_tensor.to(image_tensor.device)
         if header_tensor.dim() == 4:
             header_tensor = header_tensor.squeeze(0)
 
@@ -124,20 +143,24 @@ class Pix2StructImageProcessor:
         resized_height = max(num_rows * patch_height, 1)
         resized_width = max(num_cols * patch_width, 1)
 
+        # MPS has no backward for antialiased bilinear resize, so on Apple GPUs this
+        # one op runs on the CPU (autograd follows the device hop). CUDA runs it natively.
+        device = image.device
+        resize_on = torch.device("cpu") if device.type == "mps" else device
         image = F.interpolate(
-            image.unsqueeze(0),
+            image.to(resize_on).unsqueeze(0),
             size=(resized_height, resized_width),
             mode="bilinear",
             align_corners=False,
             antialias=True,
-        ).squeeze(0)
+        ).squeeze(0).to(device)
 
         patches = torch_extract_patches(image, patch_height, patch_width)
         rows, columns, depth = patches.shape[1], patches.shape[2], patches.shape[3]
         patches = patches.reshape([rows * columns, depth])
 
-        row_ids = torch.arange(rows).reshape([rows, 1]).repeat(1, columns).reshape([rows * columns, 1])
-        col_ids = torch.arange(columns).reshape([1, columns]).repeat(rows, 1).reshape([rows * columns, 1])
+        row_ids = torch.arange(rows, device=image.device).reshape([rows, 1]).repeat(1, columns).reshape([rows * columns, 1])
+        col_ids = torch.arange(columns, device=image.device).reshape([1, columns]).repeat(rows, 1).reshape([rows * columns, 1])
         row_ids = (row_ids + 1).to(torch.float32)
         col_ids = (col_ids + 1).to(torch.float32)
 

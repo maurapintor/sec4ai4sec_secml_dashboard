@@ -75,7 +75,12 @@ def attack_pix2struct(
     """Compute adversarial perturbation for Pix2Struct model. Returns the adversarial PIL image."""
     questions, targets = questions_target_validation(questions, targets)
 
-    input_tensor = torch.tensor(to_numpy_array(image).astype(np.float32), requires_grad=True)
+    # Keep the image (and with it delta, the mask and the differentiable preprocessing)
+    # on the model's device, so each step runs entirely on the GPU.
+    device = model._get_device()
+    input_tensor = torch.tensor(
+        to_numpy_array(image).astype(np.float32), device=device, requires_grad=True
+    )
     labels = model.model_processor.get_input_ids(targets)
 
     perturbation_mask = mask_function(input_tensor)
@@ -85,12 +90,12 @@ def attack_pix2struct(
 
     perturbation_constraints = [
         MaskConstraint(mask=perturbation_mask),
-        norm_constraint(radius=float(eps)),
+        norm_constraint(radius=torch.tensor(float(eps), device=device)),
     ]
     domain_constraints = [
         QuantizationConstraintWithMask(
             mask=perturbation_mask.unsqueeze(0),
-            levels=torch.arange(0, 256),
+            levels=torch.arange(0, 256, device=device),
         ),
     ]
     gradient_processing = LinearProjectionGradientProcessing(lp_model)
